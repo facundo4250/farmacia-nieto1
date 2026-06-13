@@ -20,6 +20,7 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../config.js"></script>
 <style>
 /* ── Color tokens ─────────────────────────────────────────── */
@@ -811,6 +812,7 @@ function Process() {
    guarda en esta computadora (modo de prueba). */
 const FN_CFG = window.FN_CONFIG || {};
 const SUPA_ON = !!(FN_CFG.SUPABASE_URL && FN_CFG.SUPABASE_ANON_KEY && !FN_CFG.SUPABASE_URL.includes('TU-PROYECTO'));
+const supaWeb = (SUPA_ON && window.supabase) ? window.supabase.createClient(FN_CFG.SUPABASE_URL, FN_CFG.SUPABASE_ANON_KEY) : null;
 
 async function enviarPedido(p) {
   if (!SUPA_ON) {
@@ -819,17 +821,8 @@ async function enviarPedido(p) {
     localStorage.setItem('fn_pedidos', JSON.stringify(arr));
     return;
   }
-  const r = await fetch(`${FN_CFG.SUPABASE_URL}/rest/v1/pedidos`, {
-    method: 'POST',
-    headers: {
-      apikey: FN_CFG.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${FN_CFG.SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({ ...p, origen: 'web' }),
-  });
-  if (!r.ok) throw new Error('No se pudo enviar el pedido');
+  const { error } = await supaWeb.from('pedidos').insert({ ...p, origen: 'web', estado: 'nuevo' });
+  if (error) throw new Error(error.message || 'No se pudo enviar el pedido');
 }
 
 // Achica la foto de la receta para que viaje liviana dentro del pedido (como texto).
@@ -891,7 +884,7 @@ function Contact({ formState }) {
       setReceta('');
       setSent(true);
     } catch (ex) {
-      setErrEnvio('No pudimos enviar tu consulta. Probá de nuevo o escribinos por WhatsApp al (+54) 291 432-7031.');
+      setErrEnvio('No pudimos enviar tu consulta (' + (ex.message || 'error') + '). Probá de nuevo o escribinos por WhatsApp al (+54) 291 432-7031.');
     }
     setEnviando(false);
   };
@@ -927,6 +920,7 @@ function Contact({ formState }) {
           ) : (
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Pedí tu fórmula</h3>
+              {!SUPA_ON && <Alert variant="warning" title="Modo de prueba">Este archivo no está conectado a la nube, así que el pedido se guarda solo en esta computadora y no llega al panel. Asegurate de abrir la web desde la carpeta completa (con el archivo config.js al lado).</Alert>}
               <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
               <div className="fn-form-row">
                 <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
