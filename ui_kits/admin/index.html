@@ -318,6 +318,8 @@ async function resolverReceta(receta) {
   if (error) throw error;
   return data.signedUrl;
 }
+// ¿la receta es un PDF (u otro archivo no-imagen)?
+const esRecetaPdf = (receta) => !!receta && (receta.startsWith('data:application/pdf') || receta.toLowerCase().endsWith('.pdf'));
 
 /* ════════════════════════════════════════════════════════════
    Componentes base (sistema de diseño Farmacia Nieto)
@@ -837,9 +839,9 @@ function RecetaThumb({ receta, onVer, onDescargar }) {
   }, [receta]);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-      {url
+      {(url && !esRecetaPdf(receta))
         ? <img src={url} alt="receta" onClick={() => onVer(receta)} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', cursor: 'pointer' }} />
-        : <span style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)' }}><Icon name="FileText" size={22} color="var(--green-600)" /></span>}
+        : <span onClick={() => onVer(receta)} style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)', cursor: 'pointer' }}><Icon name={esRecetaPdf(receta) ? 'FileText' : 'Image'} size={22} color="var(--green-600)" /></span>}
       <div style={{ display: 'flex', gap: 6 }}>
         <Button size="sm" variant="outline" onClick={() => onVer(receta)} iconLeft={<Icon name="Eye" size={14} />}>Ver</Button>
         <Button size="sm" variant="ghost" onClick={() => onDescargar(receta)} iconLeft={<Icon name="Download" size={14} />}>Descargar</Button>
@@ -1007,14 +1009,18 @@ function Panel({ session, onSalir }) {
     await refrescar();
   };
   const abrirReceta = async (receta) => {
-    try { setRecetaVer({ url: await resolverReceta(receta) }); }
-    catch (e) { setErrCarga('No se pudo abrir la foto de la receta.'); }
+    try {
+      const url = await resolverReceta(receta);
+      const esPdf = esRecetaPdf(receta);
+      setRecetaVer({ url, esPdf });
+    } catch (e) { setErrCarga('No se pudo abrir la receta.'); }
   };
   const bajarUrl = async (u) => {
     const blob = await (await fetch(u)).blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'receta-' + Date.now() + (blob.type.includes('png') ? '.png' : '.jpg');
+    const ext = blob.type.includes('pdf') ? '.pdf' : blob.type.includes('png') ? '.png' : '.jpg';
+    a.download = 'receta-' + Date.now() + ext;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -1232,13 +1238,15 @@ function Panel({ session, onSalir }) {
           style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(20,52,32,.72)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', maxWidth: 'min(92vw, 820px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'var(--cream-50)', fontWeight: 600, fontSize: 14 }}>Foto de la receta</span>
+              <span style={{ color: 'var(--cream-50)', fontWeight: 600, fontSize: 14 }}>Receta</span>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button variant="accent" size="sm" onClick={() => bajarUrl(recetaVer.url).catch(() => setErrCarga('No se pudo descargar la receta.'))} iconLeft={<Icon name="Download" size={15} />}>Descargar</Button>
                 <Button variant="ghost" size="sm" onClick={() => setRecetaVer(null)} style={{ color: 'var(--cream-50)' }} iconLeft={<Icon name="X" size={16} color="var(--cream-50)" />}>Cerrar</Button>
               </div>
             </div>
-            <img src={recetaVer.url} alt="Receta" style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 52px)', objectFit: 'contain', borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
+            {recetaVer.esPdf
+              ? <iframe title="Receta (PDF)" src={recetaVer.url} style={{ width: 'min(92vw, 820px)', height: '80vh', border: 0, borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
+              : <img src={recetaVer.url} alt="Receta" style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 52px)', objectFit: 'contain', borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />}
           </div>
         </div>
       )}

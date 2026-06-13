@@ -861,8 +861,20 @@ function Contact({ formState }) {
   const elegirFoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    try { setReceta(await comprimirImagen(file)); }
-    catch { setErrEnvio('No se pudo leer esa imagen. Probá con otra.'); }
+    try {
+      if (file.type.startsWith('image/')) {
+        setReceta(await comprimirImagen(file)); // las imágenes se comprimen
+      } else {
+        if (file.size > 4 * 1024 * 1024) { setErrEnvio('El archivo es muy grande (máximo 4 MB). Probá comprimirlo o sacale una foto.'); return; }
+        const dataUrl = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = () => rej(new Error('archivo'));
+          r.readAsDataURL(file);
+        });
+        setReceta(dataUrl); // PDF u otro: se guarda tal cual
+      }
+    } catch { setErrEnvio('No se pudo leer ese archivo. Probá con otro.'); }
   };
 
   const enviar = async (e) => {
@@ -930,17 +942,25 @@ function Contact({ formState }) {
               <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
               <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle')} />
               <div className="fn-field">
-                <span className="fn-field__label">Foto de la receta <span style={{ fontWeight: 400, color: 'var(--ink-400)' }}>(opcional)</span></span>
+                <span className="fn-field__label">Receta <span style={{ fontWeight: 400, color: 'var(--ink-400)' }}>(opcional — foto o archivo PDF)</span></span>
                 {receta ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <img src={receta} alt="receta" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)' }} />
+                    {receta.startsWith('data:image')
+                      ? <img src={receta} alt="receta" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)' }} />
+                      : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, color: 'var(--green-900)', background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}><Icon name="FileText" size={18} color="var(--green-700)" /> Archivo adjunto</span>}
                     <Button variant="ghost" size="sm" type="button" onClick={() => setReceta('')} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>
                   </div>
                 ) : (
-                  <label className="fn-btn fn-btn--outline fn-btn--md" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
-                    <Icon name="Camera" size={16} /> <span>Subir o sacar foto</span>
-                    <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
-                  </label>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <label className="fn-btn fn-btn--outline fn-btn--md" style={{ cursor: 'pointer' }}>
+                      <Icon name="Camera" size={16} /> <span>Sacar / subir foto</span>
+                      <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
+                    </label>
+                    <label className="fn-btn fn-btn--outline fn-btn--md" style={{ cursor: 'pointer' }}>
+                      <Icon name="Paperclip" size={16} /> <span>Subir archivo (PDF)</span>
+                      <input type="file" accept="image/*,application/pdf" onChange={elegirFoto} style={{ display: 'none' }} />
+                    </label>
+                  </div>
                 )}
               </div>
               {errEnvio && <Alert variant="danger">{errEnvio}</Alert>}
