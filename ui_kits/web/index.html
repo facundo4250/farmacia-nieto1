@@ -780,20 +780,49 @@ async function enviarPedido(p) {
   if (!r.ok) throw new Error('No se pudo enviar el pedido');
 }
 
+// Achica la foto de la receta para que viaje liviana dentro del pedido (como texto).
+function comprimirImagen(file, maxLado = 1100, calidad = 0.62) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxLado) { h = Math.round(h * maxLado / w); w = maxLado; }
+      else if (h >= w && h > maxLado) { w = Math.round(w * maxLado / h); h = maxLado; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen')); };
+    img.src = url;
+  });
+}
+
 /* ── Contact ──────────────────────────────────────────────── */
 function Contact({ formState }) {
   const { sent, setSent } = formState;
   const [campos, setCampos] = React.useState({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+  const [receta, setReceta] = React.useState('');
   const [enviando, setEnviando] = React.useState(false);
   const [errEnvio, setErrEnvio] = React.useState('');
   const setCampo = (k) => (e) => setCampos({ ...campos, [k]: e.target.value });
+
+  const elegirFoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try { setReceta(await comprimirImagen(file)); }
+    catch { setErrEnvio('No se pudo leer esa imagen. Probá con otra.'); }
+  };
 
   const enviar = async (e) => {
     e.preventDefault();
     setEnviando(true); setErrEnvio('');
     try {
-      await enviarPedido(campos);
+      await enviarPedido({ ...campos, receta_img: receta || null });
       setCampos({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+      setReceta('');
       setSent(true);
     } catch (ex) {
       setErrEnvio('No pudimos enviar tu consulta. Probá de nuevo o escribinos por WhatsApp al (+54) 291 432-7031.');
@@ -838,6 +867,20 @@ function Contact({ formState }) {
               </div>
               <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
               <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle')} />
+              <div className="fn-field">
+                <span className="fn-field__label">Foto de la receta <span style={{ fontWeight: 400, color: 'var(--ink-400)' }}>(opcional)</span></span>
+                {receta ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={receta} alt="receta" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)' }} />
+                    <Button variant="ghost" size="sm" type="button" onClick={() => setReceta('')} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>
+                  </div>
+                ) : (
+                  <label className="fn-btn fn-btn--outline fn-btn--md" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
+                    <Icon name="Camera" size={16} /> <span>Subir o sacar foto</span>
+                    <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
               {errEnvio && <Alert variant="danger">{errEnvio}</Alert>}
               <Button variant="primary" size="lg" fullWidth type="submit" disabled={enviando} iconRight={<Icon name="Send" size={17} />}>
                 {enviando ? 'Enviando…' : 'Enviar consulta'}
