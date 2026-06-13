@@ -1081,6 +1081,16 @@ function Panel({ session, onSalir }) {
         return;
       }
     }
+    if (estado === 'entregado') {
+      const p = pedidos.find((x) => x.id === id);
+      const cob = calcCobro(p || {});
+      const haySaldo = cob.precioN != null && !cob.pagoTodo && cob.saldoBase > 0;
+      if (haySaldo && !p.pago_resto_metodo) {
+        setErrCarga('No se puede entregar sin cobrar el saldo. Registrá la "Forma de pago del saldo" en la ficha que se abrió y guardá; recién ahí podés marcarlo Entregado.');
+        setForm(p);
+        return;
+      }
+    }
     setErrCarga('');
     setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
     try { await api.actualizar(id, { estado }); } catch (e) { refrescar(); }
