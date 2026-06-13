@@ -250,6 +250,10 @@ const formatEntrega = (d) => {
   if (!d) return '';
   return new Date(d + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
 };
+const fechaDia = (iso) => iso ? new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '';
+// Identifica al cliente por teléfono (sin espacios ni guiones); si no hay, por nombre.
+const normTel = (t) => (t || '').replace(/\D/g, '');
+const claveCliente = (p) => normTel(p.telefono) || ('n:' + (p.nombre || '').trim().toLowerCase());
 
 /* ── Fotos de recetas ───────────────────────────────────────────
    Achicamos la imagen para que pese poco. En modo de prueba se
@@ -536,7 +540,7 @@ function fechaCorta(iso) {
          d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function PedidoRow({ p, onEstado, onEditar, onVerReceta }) {
+function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
   const tieneMeta = (p.precio || p.precio === 0) || p.entrega || p.receta_img;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
@@ -552,6 +556,7 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta }) {
         </div>
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
+            {recurrencia >= 2 && <Badge variant="solid"><Icon name="Repeat" size={11} color="var(--cream-50)" /> Cliente recurrente · {recurrencia}</Badge>}
             {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
             <Badge variant={p.origen === 'web' ? 'info' : 'gold'}>{p.origen === 'web' ? 'Desde la web' : 'Carga manual'}</Badge>
           </div>
@@ -705,6 +710,66 @@ function ConfirmarBorrado({ onConfirmar, onCancelar }) {
   );
 }
 
+/* ════════════════════════════════════════════════════════════
+   Vista de Clientes — recurrentes, pedidos y total gastado
+   ════════════════════════════════════════════════════════════ */
+function ClientesView({ clientes }) {
+  const [q, setQ] = React.useState('');
+  const norm = (s) => (s || '').toLowerCase();
+  const lista = clientes.filter((c) => !q || norm(c.nombre).includes(norm(q)) || (c.telefono || '').includes(q));
+  const recurrentes = clientes.filter((c) => c.cantidad >= 2).length;
+  const th = { textAlign: 'left', fontSize: 11.5, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 700, padding: '0 14px 10px' };
+  const td = { padding: '11px 14px', borderTop: '1px solid var(--line-200)', fontSize: 14, color: 'var(--ink-700)' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <h3 style={{ fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Clientes <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--ink-400)' }}>· {clientes.length} en total, {recurrentes} recurrentes</span></h3>
+        <input className="fn-input fp-search" style={{ padding: '.55rem .95rem', fontSize: 14 }} placeholder="Buscar cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      {lista.length === 0 ? (
+        <Card padding="lg" style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--ink-500)', margin: '12px 0' }}>{clientes.length === 0 ? 'Todavía no hay clientes cargados.' : 'Ningún cliente coincide con la búsqueda.'}</p>
+        </Card>
+      ) : (
+        <Card padding="md">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)' }}>
+              <thead>
+                <tr>
+                  <th style={th}>Cliente</th>
+                  <th style={th}>Teléfono</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Pedidos</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Total gastado</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Última visita</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((c) => (
+                  <tr key={c.clave}>
+                    <td style={{ ...td, fontWeight: 600, color: 'var(--green-900)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {c.nombre || '—'}
+                        {c.cantidad >= 2 && <Badge variant="gold">Recurrente</Badge>}
+                      </span>
+                    </td>
+                    <td style={td}>{c.telefono || '—'}</td>
+                    <td style={{ ...td, textAlign: 'right' }}>{c.cantidad}</td>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: 'var(--green-800)' }}>{formatMonto(c.total) || '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', color: 'var(--ink-500)' }}>{fechaDia(c.ultimo)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+      <p style={{ fontSize: 12.5, color: 'var(--ink-400)', margin: 0 }}>
+        Un cliente se marca como <b>Recurrente</b> a partir de su 2º pedido. Para darle un descuento, aplicalo al cargar el "Monto del preparado" del pedido.
+      </p>
+    </div>
+  );
+}
+
 function Panel({ session, onSalir }) {
   const [pedidos, setPedidos] = React.useState([]);
   const [tab, setTab] = React.useState('todos');
@@ -756,6 +821,27 @@ function Panel({ session, onSalir }) {
     return Object.values(m).sort((a, b) => b.orden - a.orden);
   }, [pedidos]);
 
+  // Fichas de clientes (agrupadas por teléfono/nombre) para ver recurrentes.
+  const clientes = React.useMemo(() => {
+    const m = {};
+    [...pedidos].reverse().forEach((p) => { // de más viejo a más nuevo
+      const k = claveCliente(p);
+      if (!k || k === 'n:') return;
+      if (!m[k]) m[k] = { clave: k, nombre: p.nombre, telefono: p.telefono, cantidad: 0, total: 0, ultimo: p.creado };
+      const c = m[k];
+      c.cantidad += 1;
+      if (p.estado !== 'cancelado') c.total += Number(p.precio) || 0;
+      if (p.nombre) c.nombre = p.nombre;
+      if (p.telefono) c.telefono = p.telefono;
+      c.ultimo = p.creado;
+    });
+    return m;
+  }, [pedidos]);
+  const clientesLista = React.useMemo(
+    () => Object.values(clientes).sort((a, b) => b.cantidad - a.cantidad || new Date(b.ultimo) - new Date(a.ultimo)),
+    [clientes]
+  );
+
   // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
   const exportarCSV = () => {
     const cols = ['creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'entrega'];
@@ -800,7 +886,7 @@ function Panel({ session, onSalir }) {
           <Wordmark />
           <span className="nieto-eyebrow" style={{ marginLeft: 4, paddingLeft: 16, borderLeft: '1px solid var(--line-300)' }}>Panel de pedidos</span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'var(--green-50)', borderRadius: 'var(--radius-pill)', padding: 3 }}>
-            {[['pedidos', 'Pedidos', 'ListChecks'], ['resumen', 'Resumen', 'BarChart3']].map(([id, label, ic]) => (
+            {[['pedidos', 'Pedidos', 'ListChecks'], ['resumen', 'Resumen', 'BarChart3'], ['clientes', 'Clientes', 'Users']].map(([id, label, ic]) => (
               <button key={id} onClick={() => setVista(id)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, padding: '6px 13px', borderRadius: 'var(--radius-pill)', color: vista === id ? 'var(--cream-50)' : 'var(--green-800)', background: vista === id ? 'var(--green-900)' : 'transparent' }}>
                 <Icon name={ic} size={14} color={vista === id ? 'var(--cream-50)' : 'var(--green-700)'} /> {label}
@@ -841,6 +927,8 @@ function Panel({ session, onSalir }) {
 
         {vista === 'resumen' ? (
           <ReporteDiario porDia={porDia} onExportar={exportarCSV} />
+        ) : vista === 'clientes' ? (
+          <ClientesView clientes={clientesLista} />
         ) : (<>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -891,7 +979,7 @@ function Panel({ session, onSalir }) {
               </div>
             </Card>
           )}
-          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} onEditar={setForm} onVerReceta={abrirReceta} />)}
+          {visibles.map((p) => <PedidoRow key={p.id} p={p} recurrencia={clientes[claveCliente(p)]?.cantidad || 1} onEstado={cambiarEstado} onEditar={setForm} onVerReceta={abrirReceta} />)}
         </div>
         </>)}
       </main>
