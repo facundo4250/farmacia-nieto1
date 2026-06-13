@@ -183,7 +183,8 @@
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: var(--bg-page);
+  background-color: var(--bg-page);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88'%3E%3Cg fill='%23789a73' fill-opacity='0.06'%3E%3Cpath d='M10 18C16 6 30 6 36 18 30 30 16 30 10 18Z'/%3E%3Cpath d='M54 60C60 48 74 48 80 60 74 72 60 72 54 60Z'/%3E%3C/g%3E%3C/svg%3E");
   color: var(--text-body);
   font-family: var(--font-sans);
   font-size: var(--text-base);
@@ -724,7 +725,7 @@ const SPECIALTIES = [
 
 function Specialties({ onCta }) {
   return (
-    <section id="especialidades" className="fn-section" style={{ background: 'var(--cream-100)' }}>
+    <section id="especialidades" className="fn-section" style={{ background: 'transparent' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', maxWidth: 620, margin: '0 auto 48px' }}>
           <span className="nieto-eyebrow">Lo que preparamos</span>
@@ -795,7 +796,7 @@ const STEPS = [
 
 function Process() {
   return (
-    <section id="proceso" className="fn-section" style={{ background: 'var(--cream-100)' }}>
+    <section id="proceso" className="fn-section" style={{ background: 'transparent' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 50 }}>
           <span className="nieto-eyebrow">Cómo trabajamos</span>
@@ -992,7 +993,7 @@ function Contact({ formState }) {
 /* ── Ubicación + mapa ─────────────────────────────────────── */
 function Ubicacion() {
   return (
-    <section id="ubicacion" className="fn-section" style={{ background: 'var(--cream-100)' }}>
+    <section id="ubicacion" className="fn-section" style={{ background: 'transparent' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <span className="nieto-eyebrow">Dónde encontrarnos</span>
@@ -1065,7 +1066,7 @@ function FAQ() {
 /* ── Catálogo (Canva) ─────────────────────────────────────── */
 function Catalogo() {
   return (
-    <section id="catalogo" className="fn-section" style={{ background: 'var(--cream-100)' }}>
+    <section id="catalogo" className="fn-section" style={{ background: 'transparent' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <span className="nieto-eyebrow">Nuestros preparados</span>
