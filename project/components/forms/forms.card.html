@@ -1,0 +1,75 @@
+<!-- @dsCard group="Components" viewport="700x520" name="Formularios" subtitle="Botones, campos y controles — el grupo forms/" -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 26px; background: var(--cream-100); }
+  .grid { display: grid; gap: 22px; }
+  .group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .lbl { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--green-600); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.FarmaciaNietoDesignSystem_3d24ed;
+const { Button, IconButton, Input, Textarea, Select, Checkbox, Radio, Switch } = NS;
+const Ico = ({d}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const plus = "M12 5v14M5 12h14";
+const arrow = "M5 12h14M13 6l6 6-6 6";
+
+function Demo(){
+  return (
+    <div className="grid">
+      <div>
+        <div className="lbl">Botones</div>
+        <div className="group">
+          <Button variant="primary">Pedí tu fórmula</Button>
+          <Button variant="secondary">Agendar</Button>
+          <Button variant="accent" iconLeft={<Ico d={plus}/>}>Nuevo</Button>
+          <Button variant="outline">Ver más</Button>
+          <Button variant="ghost" iconRight={<Ico d={arrow}/>}>Detalle</Button>
+          <Button variant="primary" disabled>Inactivo</Button>
+        </div>
+        <div className="group" style={{marginTop:'12px'}}>
+          <Button size="sm" variant="secondary">Pequeño</Button>
+          <Button size="md" variant="secondary">Mediano</Button>
+          <Button size="lg" variant="secondary">Grande</Button>
+          <IconButton label="Sumar" variant="solid"><Ico d={plus}/></IconButton>
+          <IconButton label="Sumar" variant="soft"><Ico d={plus}/></IconButton>
+          <IconButton label="Sumar" variant="outline"><Ico d={plus}/></IconButton>
+        </div>
+      </div>
+      <div className="cols">
+        <div className="stack">
+          <Input label="Nombre y apellido" placeholder="Patricia Nieto" />
+          <Select label="Especialidad" placeholder="Elegí una opción"
+            options={['Dermocosmética','Homeopatía','Fitoterapia','Florales']} />
+        </div>
+        <div className="stack">
+          <Input label="Email" type="email" placeholder="hola@correo.com" hint="Te escribimos por aquí" />
+          <Input label="Teléfono" error="Ingresá un número válido" defaultValue="29" />
+        </div>
+      </div>
+      <Textarea label="Contanos qué necesitás" rows={2} placeholder="Detalle de la receta o consulta…" />
+      <div className="group" style={{gap:'24px'}}>
+        <Checkbox label="Recibir novedades" defaultChecked />
+        <Radio name="r" label="Retiro en local" defaultChecked />
+        <Radio name="r" label="Envío" />
+        <Switch label="Recordatorios" defaultChecked />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+/* ============================================================
+   Farmacia Nieto — Base element defaults
+   Light touch: sets the paper, the body type, sensible resets.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  font-weight: var(--weight-regular);
+  line-height: var(--type-body-line);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  color: var(--text-strong);
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+h1 { font-size: var(--text-3xl); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+h2 { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+
+p { margin: 0 0 1em; text-wrap: pretty; }
+
+a {
+  color: var(--green-800);
+  text-decoration-color: color-mix(in oklab, var(--green-600) 40%, transparent);
+  text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease-soft);
+}
+a:hover { color: var(--green-950); }
+
+/* The signature wordmark flourish */
+.nieto-script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  color: var(--green-700);
+  line-height: 1;
+}
+
+/* Eyebrow / overline */
+.nieto-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--green-600);
+}
+
+/* Elegant tracked caps (the "NIETO" treatment) */
+.nieto-caps {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+::selection { background: color-mix(in oklab, var(--gold-400) 55%, transparent); color: var(--ink-900); }
+
+:focus-visible {
+  outline: 2px solid var(--green-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+img { max-width: 100%; display: block; }
+
+button { font-family: inherit; }

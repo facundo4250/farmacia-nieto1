@@ -1,0 +1,24 @@
+<!-- @dsCard group="Brand" viewport="700x230" name="Emblema — mortero" subtitle="La marca sin texto: avatar, favicon, sello, fondo" -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--cream-100); display: flex; gap: 20px; align-items: center; justify-content: center; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lbl { font-family: var(--font-sans); font-size: 11px; font-weight: 600; color: var(--ink-500); }
+  .a { width: 150px; height: 150px; background: var(--cream-200); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+  .a img { width: 130px; }
+  .circ { width: 96px; height: 96px; border-radius: var(--radius-pill); background: var(--mint-100); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .circ img { width: 92px; transform: translateY(4px); }
+  .badge { width: 96px; height: 96px; border-radius: var(--radius-pill); background: var(--green-900); display: flex; align-items: center; justify-content: center; }
+  .badge img { width: 78px; filter: brightness(0) invert(1); opacity: .92; }
+</style>
+</head>
+<body>
+  <div class="item"><div class="a"><img src="../assets/emblem-nieto.png" alt="Emblema"></div><div class="lbl">Sello en papel</div></div>
+  <div class="item"><div class="circ"><img src="../assets/emblem-nieto.png" alt="Avatar"></div><div class="lbl">Avatar</div></div>
+  <div class="item"><div class="badge"><img src="../assets/emblem-nieto.png" alt="Mono"></div><div class="lbl">Monocromo</div></div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Slide — Especialidades" subtitle="Grilla de contenido sobre papel crema, con íconos de línea" -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; }
+  .slide { width: 1280px; height: 720px; background: var(--cream-100); position: relative; overflow: hidden; padding: 72px 96px; box-sizing: border-box; font-family: var(--font-sans); }
+  .eyebrow { font-weight: 600; font-size: 15px; letter-spacing: .2em; text-transform: uppercase; color: var(--green-600); display: flex; align-items: center; gap: 10px; }
+  h2 { font-family: var(--font-serif); font-weight: 600; font-size: 46px; color: var(--green-900); margin: 12px 0 40px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .card { background: var(--cream-50); border: 1px solid var(--line-200); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm); }
+  .ico { width: 50px; height: 50px; border-radius: 14px; background: var(--green-100); display: flex; align-items: center; justify-content: center; color: var(--green-700); margin-bottom: 14px; }
+  .name { font-family: var(--font-serif); font-weight: 600; font-size: 19px; color: var(--green-900); line-height: 1.15; }
+  .em { position: absolute; right: 70px; bottom: 54px; color: var(--green-200); opacity: .8; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="eyebrow"><i data-lucide="sparkles" style="width:16px;height:16px;"></i> Lo que preparamos</div>
+  <h2>Ocho especialidades, un solo cuidado</h2>
+  <div class="grid">
+    <div class="card"><div class="ico"><i data-lucide="sparkles"></i></div><div class="name">Medicina Ortomolecular</div></div>
+    <div class="card"><div class="ico"><i data-lucide="droplet"></i></div><div class="name">Dermocosmética</div></div>
+    <div class="card"><div class="ico"><i data-lucide="flask-round"></i></div><div class="name">Homeopatía</div></div>
+    <div class="card"><div class="ico"><i data-lucide="pill"></i></div><div class="name">Alopatía</div></div>
+    <div class="card"><div class="ico"><i data-lucide="leaf"></i></div><div class="name">Fitoterapia</div></div>
+    <div class="card"><div class="ico"><i data-lucide="flower-2"></i></div><div class="name">Florales</div></div>
+    <div class="card"><div class="ico"><i data-lucide="microscope"></i></div><div class="name">Probióticos</div></div>
+    <div class="card"><div class="ico"><i data-lucide="activity"></i></div><div class="name">Hormonas Bioidénticas</div></div>
+  </div>
+  <i data-lucide="flask-conical" class="em" style="width:80px;height:80px;"></i>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* ============================================================
+   Farmacia Nieto — Color tokens
+   Sampled from the brand logo + flyer.
+   Botanical greens · warm cream paper · honey-gold floral accent · wood.
+   ============================================================ */
+
+:root {
+  /* --- Green (botanical core) ------------------------------- */
+  --green-950: #143420; /* deepest pine, leaf shadow */
+  --green-900: #1e4d2b; /* forest — the "FARMACIA NIETO" wordmark */
+  --green-800: #225b30; /* pine, leaf */
+  --green-700: #2f6b3c;
+  --green-600: #4e7a45; /* mortar body — botanic mid green */
+  --green-500: #6f8f6c; /* sage — the flyer background */
+  --green-400: #8aa985; /* soft sage */
+  --green-300: #9bc3ae; /* mint-sage — the "NIETO" caps tint */
+  --green-200: #c3dccb; /* pale sage wash */
+  --green-100: #e3efe4; /* faint sage tint */
+  --green-50:  #eff5ec; /* whisper sage */
+
+  /* --- Mint (cool surface from the logo lockup box) --------- */
+  --mint-200: #cfe8e6;
+  --mint-100: #e1f2f1; /* logo card background */
+  --mint-50:  #eef8f7;
+
+  /* --- Cream / paper (warm neutral) ------------------------- */
+  --cream-300: #f3e6c9;
+  --cream-200: #f8ecd4; /* logo background — signature paper */
+  --cream-100: #fbf5e9; /* page paper */
+  --cream-50:  #fefcf6; /* lightest card */
+
+  /* --- Gold / honey (floral accent) ------------------------- */
+  --gold-700: #b8881f; /* deep amber */
+  --gold-600: #d4a32c;
+  --gold-500: #ddb438; /* honey — the flower */
+  --gold-400: #f2c94c; /* bright petal */
+  --gold-300: #f8dd86; /* soft pollen */
+  --gold-100: #fbf0cf; /* honey wash */
+
+  /* --- Wood (mortar pestle) -------------------------------- */
+  --wood-700: #6f551a; /* flower center / dark wood */
+  --wood-500: #a06a3c; /* pestle */
+  --wood-300: #c89b6f; /* light wood */
+  --wood-100: #ecdcc6;
+
+  /* --- Warm neutrals (text & lines, green-tinted) ---------- */
+  --ink-900: #20291f; /* near-black, warm green-tinted */
+  --ink-700: #2f3b2c;
+  --ink-600: #3c4a3a; /* body text */
+  --ink-500: #5a6857; /* secondary text */
+  --ink-400: #7d8a79; /* muted text */
+  --ink-300: #a7b0a1; /* faint / placeholder */
+  --line-300: #d3dccb; /* sage hairline */
+  --line-200: #e4e7d9; /* warm hairline */
+  --line-100: #efeede; /* faintest line */
+  --white: #ffffff;
+
+  /* --- Semantic / status ---------------------------------- */
+  --success: #4e7a45;
+  --success-soft: #e3efe4;
+  --warning: #d4a32c;
+  --warning-soft: #fbf0cf;
+  --danger: #b4503e;   /* warm terracotta, harmonizes with wood */
+  --danger-soft: #f6e2dc;
+  --info: #4a7d86;     /* muted teal from mint family */
+  --info-soft: #e1f2f1;
+
+  /* ========================================================
+     Semantic aliases — use these in components
+     ======================================================== */
+
+  /* Backgrounds & surfaces */
+  --bg-page: var(--cream-100);
+  --bg-paper: var(--cream-200);
+  --surface-card: var(--cream-50);
+  --surface-raised: var(--white);
+  --surface-sunken: var(--cream-200);
+  --surface-sage: var(--green-500);   /* sage feature block */
+  --surface-mint: var(--mint-100);    /* cool calm panel */
+  --surface-forest: var(--green-900); /* deep footer / hero */
+  --surface-cream: var(--cream-200);
+
+  /* Text */
+  --text-strong: var(--ink-900);
+  --text-body: var(--ink-600);
+  --text-muted: var(--ink-400);
+  --text-faint: var(--ink-300);
+  --text-on-dark: var(--cream-100);
+  --text-on-sage: var(--cream-50);
+  --text-brand: var(--green-900);
+  --text-accent: var(--wood-700);
+
+  /* Brand roles */
+  --brand-primary: var(--green-900);
+  --brand-primary-hover: var(--green-800);
+  --brand-primary-press: var(--green-950);
+  --brand-secondary: var(--green-500);
+  --brand-accent: var(--gold-500);
+  --brand-accent-strong: var(--gold-700);
+  --brand-wood: var(--wood-500);
+
+  /* Lines & focus */
+  --border-subtle: var(--line-200);
+  --border-default: var(--line-300);
+  --border-strong: var(--green-300);
+  --ring: color-mix(in oklab, var(--green-600) 55%, transparent);
+  --ring-gold: color-mix(in oklab, var(--gold-500) 60%, transparent);
+}

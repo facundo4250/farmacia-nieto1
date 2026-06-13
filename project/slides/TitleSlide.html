@@ -1,0 +1,35 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Slide — Portada" subtitle="Apertura de marca sobre salvia, con el lockup en su caja de menta" -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; }
+  .slide { width: 1280px; height: 720px; background: var(--green-500); position: relative; overflow: hidden; display: flex; align-items: center; gap: 64px; padding: 0 96px; box-sizing: border-box; font-family: var(--font-sans); }
+  .deco { position: absolute; color: var(--cream-50); opacity: .14; }
+  .box { background: var(--mint-100); border-radius: 32px; padding: 30px; box-shadow: var(--shadow-xl); flex: none; }
+  .box img { width: 300px; height: 300px; object-fit: contain; }
+  .eyebrow { font-weight: 600; font-size: 17px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-300); }
+  h1 { font-family: var(--font-serif); font-weight: 600; font-size: 66px; line-height: 1.04; color: var(--cream-50); margin: 18px 0 0; letter-spacing: -0.01em; }
+  h1 em { font-style: italic; color: var(--mint-100); }
+  .since { display: inline-flex; align-items: center; gap: 10px; margin-top: 30px; background: rgba(255,255,255,.16); color: var(--cream-50); font-weight: 600; font-size: 16px; padding: 10px 20px; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <i data-lucide="leaf" class="deco" style="top:70px; left:60px; width:54px; height:54px;"></i>
+  <i data-lucide="flask-conical" class="deco" style="top:560px; left:120px; width:48px; height:48px;"></i>
+  <i data-lucide="sparkles" class="deco" style="top:120px; right:80px; width:44px; height:44px;"></i>
+  <i data-lucide="flower-2" class="deco" style="bottom:70px; right:140px; width:52px; height:52px;"></i>
+  <div class="box"><img src="../assets/logo-nieto.png" alt="Farmacia Nieto"></div>
+  <div>
+    <div class="eyebrow">Elaboración magistral</div>
+    <h1>Tu camino<br>hacia el <em>bienestar</em></h1>
+    <div class="since"><i data-lucide="heart-handshake" style="width:18px;height:18px;"></i> Desde 1996</div>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

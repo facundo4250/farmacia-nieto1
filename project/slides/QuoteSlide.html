@@ -1,0 +1,28 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Slide — Cita" subtitle="Frase de marca a página completa sobre verde profundo" -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; }
+  .slide { width: 1280px; height: 720px; background: var(--green-950); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 140px; box-sizing: border-box; font-family: var(--font-sans); }
+  .deco { position: absolute; color: var(--green-300); opacity: .12; }
+  .mark { width: 70px; height: 70px; border-radius: 50%; background: var(--gold-400); display: flex; align-items: center; justify-content: center; color: var(--wood-700); margin-bottom: 34px; }
+  blockquote { font-family: var(--font-serif); font-weight: 500; font-style: italic; font-size: 58px; line-height: 1.18; color: var(--cream-50); margin: 0; letter-spacing: -0.01em; }
+  blockquote b { font-style: normal; font-weight: 600; color: var(--gold-300); }
+  .who { margin-top: 34px; font-size: 16px; letter-spacing: .18em; text-transform: uppercase; color: var(--green-300); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <i data-lucide="leaf" class="deco" style="top:80px; left:110px; width:64px; height:64px;"></i>
+  <i data-lucide="flower-2" class="deco" style="bottom:90px; right:130px; width:72px; height:72px;"></i>
+  <div class="mark"><i data-lucide="heart" style="width:32px;height:32px;"></i></div>
+  <blockquote>Cuidamos de ti de manera <b>personalizada</b>.</blockquote>
+  <div class="who">Farmacia Nieto · Elaboración magistral</div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>
