@@ -447,6 +447,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
     especialidad: inicial?.especialidad || '', detalle: inicial?.detalle || '',
     precio: inicial?.precio ?? '', entrega: inicial?.entrega || '',
     nro_retiro: inicial?.nro_retiro ?? '', sena: inicial?.sena ?? '', pago_metodo: inicial?.pago_metodo || '',
+    pago_resto_metodo: inicial?.pago_resto_metodo || '',
   });
   const precioN = f.precio === '' ? null : Number(f.precio);
   const senaN = f.sena === '' ? 0 : Number(f.sena);
@@ -489,6 +490,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         nro_retiro: f.nro_retiro === '' ? null : Number(f.nro_retiro),
         sena: f.sena === '' ? null : Number(f.sena),
         pago_metodo: f.pago_metodo || null,
+        pago_resto_metodo: f.pago_resto_metodo || null,
       };
       await onGuardar(datos, editando ? inicial.id : null);
       onCerrar();
@@ -549,6 +551,9 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
             </span>
           </div>
         )}
+        {!pagoTodo && faltaRetiro != null && faltaRetiro > 0 && (
+          <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
+        )}
         <div className="fn-field">
           <span className="fn-field__label">Foto de la receta <span style={{ fontWeight: 500, color: 'var(--ink-400)' }}>(opcional)</span></span>
           {hayFoto ? (
@@ -594,7 +599,7 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
   const senaN = (p.sena || p.sena === 0) ? Number(p.sena) : null;
   const pagoTodo = precioN != null && precioN > 0 && (senaN || 0) >= precioN;
   const faltaR = precioN == null ? null : Math.max(0, precioN - (senaN || 0));
-  const tieneMeta = precioN != null || senaN != null || p.entrega || p.receta_img;
+  const tieneMeta = precioN != null || senaN != null || p.entrega || p.receta_img || p.pago_resto_metodo;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
   return (
@@ -624,6 +629,7 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
               {precioN != null && <Badge variant="gold">Total {formatMonto(precioN)}</Badge>}
               {senaN != null && <Badge variant="neutral">Seña {formatMonto(senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}</Badge>}
               {pagoTodo ? <Badge variant="success">Pago todo</Badge> : (precioN != null && faltaR > 0 && <Badge variant="warning">Falta {formatMonto(faltaR)}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Resto · {p.pago_resto_metodo}</Badge>}
               {p.entrega && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--ink-500)', fontWeight: 600 }}>
                   <Icon name="Calendar" size={13} color="var(--ink-400)" /> Entrega ~ {formatEntrega(p.entrega)}
@@ -822,6 +828,7 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
               {(p.precio || p.precio === 0) && (Number(p.sena) || 0) >= Number(p.precio) && Number(p.precio) > 0
                 ? <Badge variant="success">Pago todo</Badge>
                 : ((p.precio || p.precio === 0) && Math.max(0, Number(p.precio) - (Number(p.sena) || 0)) > 0 && <Badge variant="warning">Falta {formatMonto(Math.max(0, Number(p.precio) - (Number(p.sena) || 0)))}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Resto · {p.pago_resto_metodo}</Badge>}
               {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
             </div>
             {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
@@ -1001,7 +1008,7 @@ function Panel({ session, onSalir }) {
 
   // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
   const exportarCSV = () => {
-    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'entrega'];
+    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'pago_resto_metodo', 'entrega'];
     const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
     const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');
