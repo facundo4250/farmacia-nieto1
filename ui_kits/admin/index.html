@@ -710,11 +710,71 @@ function ConfirmarBorrado({ onConfirmar, onCancelar }) {
   );
 }
 
+/* Miniatura de receta: resuelve la imagen (modo prueba o nube) y permite ver/descargar */
+function RecetaThumb({ receta, onVer, onDescargar }) {
+  const [url, setUrl] = React.useState('');
+  React.useEffect(() => {
+    let ok = true;
+    resolverReceta(receta).then((u) => { if (ok) setUrl(u); }).catch(() => {});
+    return () => { ok = false; };
+  }, [receta]);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      {url
+        ? <img src={url} alt="receta" onClick={() => onVer(receta)} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', cursor: 'pointer' }} />
+        : <span style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)' }}><Icon name="FileText" size={22} color="var(--green-600)" /></span>}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <Button size="sm" variant="outline" onClick={() => onVer(receta)} iconLeft={<Icon name="Eye" size={14} />}>Ver</Button>
+        <Button size="sm" variant="ghost" onClick={() => onDescargar(receta)} iconLeft={<Icon name="Download" size={14} />}>Descargar</Button>
+      </div>
+    </div>
+  );
+}
+
+/* Historial de un cliente: todos sus pedidos con fechas y fotos de recetas */
+function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargarReceta }) {
+  const items = pedidos
+    .filter((p) => claveCliente(p) === cliente.clave)
+    .sort((a, b) => new Date(b.creado) - new Date(a.creado));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <Button size="sm" variant="ghost" onClick={onVolver} iconLeft={<Icon name="ArrowLeft" size={15} />}>Volver</Button>
+        <h3 style={{ fontSize: 22, color: 'var(--green-900)', margin: 0 }}>{cliente.nombre || 'Cliente'}</h3>
+        {cliente.cantidad >= 2 && <Badge variant="gold">Recurrente</Badge>}
+        <span style={{ marginLeft: 'auto', fontSize: 13.5, color: 'var(--ink-500)', fontWeight: 600 }}>{cliente.telefono} · {items.length} {items.length === 1 ? 'pedido' : 'pedidos'} · Total {formatMonto(cliente.total) || '$ 0'}</span>
+      </div>
+      {items.map((p) => {
+        const est = ESTADOS[p.estado] || ESTADOS.nuevo;
+        return (
+          <Card key={p.id} padding="md">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 600, color: 'var(--green-900)' }}>{fechaCorta(p.creado)}</span>
+              <Badge variant={est.badge} dot>{est.label}</Badge>
+            </div>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 6 }}>
+              {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
+              {(p.precio || p.precio === 0) && <Badge variant="gold">{formatMonto(p.precio)}</Badge>}
+              {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
+            </div>
+            {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
+            {p.receta_img && <div style={{ marginTop: 10 }}><RecetaThumb receta={p.receta_img} onVer={onVerReceta} onDescargar={onDescargarReceta} /></div>}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════
    Vista de Clientes — recurrentes, pedidos y total gastado
    ════════════════════════════════════════════════════════════ */
-function ClientesView({ clientes }) {
+function ClientesView({ clientes, pedidos, onVerReceta, onDescargarReceta }) {
   const [q, setQ] = React.useState('');
+  const [sel, setSel] = React.useState(null);
+  const cli = sel ? clientes.find((c) => c.clave === sel) : null;
+  if (cli) return <ClienteHistorial cliente={cli} pedidos={pedidos} onVolver={() => setSel(null)} onVerReceta={onVerReceta} onDescargarReceta={onDescargarReceta} />;
+
   const norm = (s) => (s || '').toLowerCase();
   const lista = clientes.filter((c) => !q || norm(c.nombre).includes(norm(q)) || (c.telefono || '').includes(q));
   const recurrentes = clientes.filter((c) => c.cantidad >= 2).length;
@@ -741,11 +801,14 @@ function ClientesView({ clientes }) {
                   <th style={{ ...th, textAlign: 'right' }}>Pedidos</th>
                   <th style={{ ...th, textAlign: 'right' }}>Total gastado</th>
                   <th style={{ ...th, textAlign: 'right' }}>Última visita</th>
+                  <th style={th}></th>
                 </tr>
               </thead>
               <tbody>
                 {lista.map((c) => (
-                  <tr key={c.clave}>
+                  <tr key={c.clave} onClick={() => setSel(c.clave)} style={{ cursor: 'pointer' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-50)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
                     <td style={{ ...td, fontWeight: 600, color: 'var(--green-900)' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {c.nombre || '—'}
@@ -756,6 +819,7 @@ function ClientesView({ clientes }) {
                     <td style={{ ...td, textAlign: 'right' }}>{c.cantidad}</td>
                     <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: 'var(--green-800)' }}>{formatMonto(c.total) || '—'}</td>
                     <td style={{ ...td, textAlign: 'right', color: 'var(--ink-500)' }}>{fechaDia(c.ultimo)}</td>
+                    <td style={{ ...td, textAlign: 'right', color: 'var(--green-600)' }}><Icon name="ChevronRight" size={18} color="var(--green-600)" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -764,7 +828,7 @@ function ClientesView({ clientes }) {
         </Card>
       )}
       <p style={{ fontSize: 12.5, color: 'var(--ink-400)', margin: 0 }}>
-        Un cliente se marca como <b>Recurrente</b> a partir de su 2º pedido. Para darle un descuento, aplicalo al cargar el "Monto del preparado" del pedido.
+        Tocá un cliente para ver todos sus pedidos con fechas y recetas. Se marca <b>Recurrente</b> a partir del 2º pedido; el descuento lo aplicás al cargar el "Monto del preparado".
       </p>
     </div>
   );
@@ -805,6 +869,18 @@ function Panel({ session, onSalir }) {
   const abrirReceta = async (receta) => {
     try { setRecetaVer({ url: await resolverReceta(receta) }); }
     catch (e) { setErrCarga('No se pudo abrir la foto de la receta.'); }
+  };
+  const bajarUrl = async (u) => {
+    const blob = await (await fetch(u)).blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'receta-' + Date.now() + (blob.type.includes('png') ? '.png' : '.jpg');
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  const descargarReceta = async (receta) => {
+    try { await bajarUrl(await resolverReceta(receta)); }
+    catch (e) { setErrCarga('No se pudo descargar la foto de la receta.'); }
   };
 
   // Agrupado por día: cantidad de pedidos, entregados y monto generado.
@@ -928,7 +1004,7 @@ function Panel({ session, onSalir }) {
         {vista === 'resumen' ? (
           <ReporteDiario porDia={porDia} onExportar={exportarCSV} />
         ) : vista === 'clientes' ? (
-          <ClientesView clientes={clientesLista} />
+          <ClientesView clientes={clientesLista} pedidos={pedidos} onVerReceta={abrirReceta} onDescargarReceta={descargarReceta} />
         ) : (<>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -996,7 +1072,10 @@ function Panel({ session, onSalir }) {
           <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', maxWidth: 'min(92vw, 820px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'var(--cream-50)', fontWeight: 600, fontSize: 14 }}>Foto de la receta</span>
-              <Button variant="ghost" size="sm" onClick={() => setRecetaVer(null)} style={{ color: 'var(--cream-50)' }} iconLeft={<Icon name="X" size={16} color="var(--cream-50)" />}>Cerrar</Button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button variant="accent" size="sm" onClick={() => bajarUrl(recetaVer.url).catch(() => setErrCarga('No se pudo descargar la receta.'))} iconLeft={<Icon name="Download" size={15} />}>Descargar</Button>
+                <Button variant="ghost" size="sm" onClick={() => setRecetaVer(null)} style={{ color: 'var(--cream-50)' }} iconLeft={<Icon name="X" size={16} color="var(--cream-50)" />}>Cerrar</Button>
+              </div>
             </div>
             <img src={recetaVer.url} alt="Receta" style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 52px)', objectFit: 'contain', borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
           </div>
