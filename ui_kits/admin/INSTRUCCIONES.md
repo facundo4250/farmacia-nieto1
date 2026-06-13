@@ -68,6 +68,8 @@ create policy "el personal puede editar"
   on pedidos for update to authenticated using (true) with check (true);
 create policy "el personal puede cargar a mano"
   on pedidos for insert to authenticated with check (true);
+create policy "el personal puede borrar"
+  on pedidos for delete to authenticated using (true);
 ```
 
 Si dice **Success**, listo.

@@ -13,4 +13,8 @@ window.FN_CONFIG = {
 
   // Pegá acá la clave "anon public" de tu proyecto:
   SUPABASE_ANON_KEY: 'TU-CLAVE-ANON',
+
+  // Contraseña para poder BORRAR pedidos en el panel.
+  // Cambiala por una que sepan solo vos y las personas de confianza:
+  BORRAR_CLAVE: 'nieto2024',
 };
