@@ -471,6 +471,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
   });
   const cb = calcCobro(f);
   const { precioN, pagoTodo, saldoMonto } = cb;
+  const estadoActual = inicial?.estado || 'nuevo';
+  const mostrarSaldoPago = estadoActual === 'listo' || estadoActual === 'entregado'; // el saldo se cobra al retirar
   const [receta, setReceta] = React.useState(inicial?.receta_img || ''); // valor ya guardado
   const [preview, setPreview] = React.useState('');                       // foto nueva elegida (dataURL)
   const [archivo, setArchivo] = React.useState(null);                     // File a subir
@@ -515,7 +517,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
       await onGuardar(datos, editando ? inicial.id : null);
       onCerrar();
     } catch (ex) {
-      setErr('No se pudo guardar el pedido. Revisá la conexión e intentá de nuevo.');
+      const msg = (ex && (ex.message || ex.hint || ex.details)) || 'error desconocido';
+      setErr('No se pudo guardar: ' + msg + '. (Si menciona una columna, falta correr ese ALTER TABLE en Supabase.)');
       setBusy(false);
     }
   };
@@ -571,13 +574,19 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         )}
         {precioN != null && !pagoTodo && saldoMonto > 0 && (
           <>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>Falta al retirar: {formatMonto(saldoMonto)}</div>
-            <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
-            {cb.restoEf && (
-              <div className="fn-field">
-                <span className="fn-field__label">Descuento por efectivo en el saldo: <b>{cb.restoDesc}%</b></span>
-                <input type="range" min="0" max="20" step="1" value={f.resto_desc || 0} onChange={set('resto_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
-              </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+              Falta al retirar: {formatMonto(saldoMonto)}{!mostrarSaldoPago && <span style={{ fontWeight: 500, color: 'var(--ink-500)' }}> · se cobra cuando el pedido esté listo</span>}
+            </div>
+            {mostrarSaldoPago && (
+              <>
+                <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
+                {cb.restoEf && (
+                  <div className="fn-field">
+                    <span className="fn-field__label">Descuento por efectivo en el saldo: <b>{cb.restoDesc}%</b></span>
+                    <input type="range" min="0" max="20" step="1" value={f.resto_desc || 0} onChange={set('resto_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
