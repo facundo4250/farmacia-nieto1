@@ -1,0 +1,13 @@
+# Configuración de publicación en Netlify para Farmacia Nieto
+# - La página principal ("/") lleva a la web del cliente
+# - "/panel" lleva al panel de pedidos (que igual pide usuario y contraseña)
+
+[[redirects]]
+  from = "/"
+  to = "/ui_kits/web/index.html"
+  status = 302
+
+[[redirects]]
+  from = "/panel"
+  to = "/ui_kits/admin/index.html"
+  status = 302
