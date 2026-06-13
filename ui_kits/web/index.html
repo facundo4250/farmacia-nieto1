@@ -818,8 +818,7 @@ const supaWeb = (SUPA_ON && window.supabase) ? window.supabase.createClient(FN_C
 async function enviarPedido(p) {
   if (!SUPA_ON) {
     const arr = JSON.parse(localStorage.getItem('fn_pedidos') || '[]');
-    const nro = arr.reduce((m, x) => Math.max(m, x.nro_retiro || 0), 0) + 1;
-    arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', origen: 'web', nro_retiro: nro, ...p });
+    arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', origen: 'web', ...p });
     localStorage.setItem('fn_pedidos', JSON.stringify(arr));
     return;
   }
