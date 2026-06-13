@@ -255,6 +255,25 @@ const fechaDia = (iso) => iso ? new Date(iso).toLocaleDateString('es-AR', { day:
 const normTel = (t) => (t || '').replace(/\D/g, '');
 const claveCliente = (p) => normTel(p.telefono) || ('n:' + (p.nombre || '').trim().toLowerCase());
 
+/* ── Cuenta de cobro (precio, seña, descuentos por efectivo) ──
+   El precio base no cambia. El descuento (0–20%) se aplica solo
+   a la parte que se paga en EFECTIVO (seña y/o saldo). */
+function calcCobro(p) {
+  const precioN = (p.precio === '' || p.precio == null) ? null : Number(p.precio);
+  const senaN = (p.sena === '' || p.sena == null) ? 0 : Number(p.sena);
+  const senaEf = p.pago_metodo === 'Efectivo';
+  const senaDesc = senaEf ? Math.min(20, Math.max(0, Number(p.sena_desc) || 0)) : 0;
+  const senaCobrado = senaEf ? Math.round(senaN * (1 - senaDesc / 100)) : senaN;
+  const saldoMonto = precioN == null ? null : Math.max(0, precioN - senaN);
+  const pagoTodo = precioN != null && precioN > 0 && senaN >= precioN;
+  const restoEf = p.pago_resto_metodo === 'Efectivo';
+  const restoDesc = restoEf ? Math.min(20, Math.max(0, Number(p.resto_desc) || 0)) : 0;
+  const saldoCobrado = saldoMonto == null ? null : (restoEf ? Math.round(saldoMonto * (1 - restoDesc / 100)) : saldoMonto);
+  const totalCobrado = precioN == null ? null : (senaCobrado + (saldoCobrado || 0));
+  const ahorro = precioN == null ? 0 : Math.max(0, precioN - totalCobrado);
+  return { precioN, senaN, senaEf, senaDesc, senaCobrado, saldoMonto, pagoTodo, restoEf, restoDesc, saldoCobrado, totalCobrado, ahorro };
+}
+
 /* ── Fotos de recetas ───────────────────────────────────────────
    Achicamos la imagen para que pese poco. En modo de prueba se
    guarda como texto en esta PC; con Supabase se sube al bucket
@@ -448,11 +467,10 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
     precio: inicial?.precio ?? '', entrega: inicial?.entrega || '',
     nro_retiro: inicial?.nro_retiro ?? '', sena: inicial?.sena ?? '', pago_metodo: inicial?.pago_metodo || '',
     pago_resto_metodo: inicial?.pago_resto_metodo || '',
+    sena_desc: inicial?.sena_desc ?? '', resto_desc: inicial?.resto_desc ?? '',
   });
-  const precioN = f.precio === '' ? null : Number(f.precio);
-  const senaN = f.sena === '' ? 0 : Number(f.sena);
-  const pagoTodo = precioN != null && precioN > 0 && senaN >= precioN;
-  const faltaRetiro = precioN == null ? null : Math.max(0, precioN - senaN);
+  const cb = calcCobro(f);
+  const { precioN, pagoTodo, saldoMonto } = cb;
   const [receta, setReceta] = React.useState(inicial?.receta_img || ''); // valor ya guardado
   const [preview, setPreview] = React.useState('');                       // foto nueva elegida (dataURL)
   const [archivo, setArchivo] = React.useState(null);                     // File a subir
@@ -491,6 +509,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         sena: f.sena === '' ? null : Number(f.sena),
         pago_metodo: f.pago_metodo || null,
         pago_resto_metodo: f.pago_resto_metodo || null,
+        sena_desc: (f.pago_metodo === 'Efectivo' && f.sena_desc !== '' && f.sena_desc != null) ? Number(f.sena_desc) : null,
+        resto_desc: (f.pago_resto_metodo === 'Efectivo' && f.resto_desc !== '' && f.resto_desc != null) ? Number(f.resto_desc) : null,
       };
       await onGuardar(datos, editando ? inicial.id : null);
       onCerrar();
@@ -542,17 +562,33 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
           <Input label="N° de retiro" type="number" min="0" step="1" value={f.nro_retiro} onChange={set('nro_retiro')} placeholder="Lo asignás al señar" />
           <Input label="Seña ($)" type="number" min="0" step="any" value={f.sena} onChange={set('sena')} placeholder="Ej: 5000" />
         </div>
-        <Select label="Forma de pago de la seña" placeholder="Elegí una opción" options={['Efectivo', 'Transferencia']} value={f.pago_metodo} onChange={set('pago_metodo')} />
-        {precioN != null && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: pagoTodo ? 'var(--success-soft)' : 'var(--warning-soft)', border: '1px solid ' + (pagoTodo ? 'color-mix(in oklab, var(--success) 28%, transparent)' : 'color-mix(in oklab, var(--warning) 30%, transparent)') }}>
-            <Icon name={pagoTodo ? 'CheckCircle2' : 'Wallet'} size={20} color={pagoTodo ? 'var(--green-600)' : 'var(--gold-700)'} />
-            <span style={{ fontWeight: 700, color: pagoTodo ? 'var(--green-800)' : 'var(--wood-700)' }}>
-              {pagoTodo ? 'Pago todo' : `Falta al retirar: ${formatMonto(faltaRetiro)}`}
-            </span>
+        <Select label="Forma de pago de la seña" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_metodo} onChange={set('pago_metodo')} />
+        {cb.senaEf && cb.senaN > 0 && (
+          <div className="fn-field">
+            <span className="fn-field__label">Descuento por efectivo en la seña: <b>{cb.senaDesc}%</b></span>
+            <input type="range" min="0" max="20" step="1" value={f.sena_desc || 0} onChange={set('sena_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
           </div>
         )}
-        {!pagoTodo && faltaRetiro != null && faltaRetiro > 0 && (
-          <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
+        {precioN != null && !pagoTodo && saldoMonto > 0 && (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>Falta al retirar: {formatMonto(saldoMonto)}</div>
+            <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
+            {cb.restoEf && (
+              <div className="fn-field">
+                <span className="fn-field__label">Descuento por efectivo en el saldo: <b>{cb.restoDesc}%</b></span>
+                <input type="range" min="0" max="20" step="1" value={f.resto_desc || 0} onChange={set('resto_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
+              </div>
+            )}
+          </>
+        )}
+        {precioN != null && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: pagoTodo ? 'var(--success-soft)' : 'var(--green-50)', border: '1px solid var(--green-200)' }}>
+            <span style={{ fontWeight: 700, color: 'var(--green-900)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Icon name={pagoTodo ? 'CheckCircle2' : 'Wallet'} size={18} color="var(--green-700)" />
+              {pagoTodo ? 'Pago todo' : `Total a cobrar: ${formatMonto(cb.totalCobrado)}`}
+            </span>
+            {cb.ahorro > 0 && <span style={{ fontWeight: 600, color: 'var(--gold-700)', fontSize: 13 }}>Descuento aplicado: {formatMonto(cb.ahorro)}</span>}
+          </div>
         )}
         <div className="fn-field">
           <span className="fn-field__label">Foto de la receta <span style={{ fontWeight: 500, color: 'var(--ink-400)' }}>(opcional)</span></span>
@@ -595,11 +631,9 @@ function fechaCorta(iso) {
 }
 
 function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
-  const precioN = (p.precio || p.precio === 0) ? Number(p.precio) : null;
-  const senaN = (p.sena || p.sena === 0) ? Number(p.sena) : null;
-  const pagoTodo = precioN != null && precioN > 0 && (senaN || 0) >= precioN;
-  const faltaR = precioN == null ? null : Math.max(0, precioN - (senaN || 0));
-  const tieneMeta = precioN != null || senaN != null || p.entrega || p.receta_img || p.pago_resto_metodo;
+  const cb = calcCobro(p);
+  const { precioN, senaN, pagoTodo, saldoMonto } = cb;
+  const tieneMeta = precioN != null || (p.sena || p.sena === 0) || p.entrega || p.receta_img || p.pago_resto_metodo;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
   return (
@@ -627,9 +661,10 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
           {tieneMeta && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
               {precioN != null && <Badge variant="gold">Total {formatMonto(precioN)}</Badge>}
-              {senaN != null && <Badge variant="neutral">Seña {formatMonto(senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}</Badge>}
-              {pagoTodo ? <Badge variant="success">Pago todo</Badge> : (precioN != null && faltaR > 0 && <Badge variant="warning">Falta {formatMonto(faltaR)}</Badge>)}
-              {p.pago_resto_metodo && <Badge variant="info">Resto · {p.pago_resto_metodo}</Badge>}
+              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaDesc > 0 ? ` (-${cb.senaDesc}%)` : ''}</Badge>}
+              {pagoTodo ? <Badge variant="success">Pago todo</Badge> : (precioN != null && saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(saldoMonto)}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoDesc > 0 ? ` (-${cb.restoDesc}%)` : ''}</Badge>}
+              {cb.ahorro > 0 && <Badge variant="success">Cobrado {formatMonto(cb.totalCobrado)} · ahorro {formatMonto(cb.ahorro)}</Badge>}
               {p.entrega && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--ink-500)', fontWeight: 600 }}>
                   <Icon name="Calendar" size={13} color="var(--ink-400)" /> Entrega ~ {formatEntrega(p.entrega)}
@@ -812,6 +847,7 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
       </div>
       {items.map((p) => {
         const est = ESTADOS[p.estado] || ESTADOS.nuevo;
+        const cb = calcCobro(p);
         return (
           <Card key={p.id} padding="md">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -823,12 +859,11 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
             </div>
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 6 }}>
               {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
-              {(p.precio || p.precio === 0) && <Badge variant="gold">Total {formatMonto(p.precio)}</Badge>}
-              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(p.sena)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}</Badge>}
-              {(p.precio || p.precio === 0) && (Number(p.sena) || 0) >= Number(p.precio) && Number(p.precio) > 0
-                ? <Badge variant="success">Pago todo</Badge>
-                : ((p.precio || p.precio === 0) && Math.max(0, Number(p.precio) - (Number(p.sena) || 0)) > 0 && <Badge variant="warning">Falta {formatMonto(Math.max(0, Number(p.precio) - (Number(p.sena) || 0)))}</Badge>)}
-              {p.pago_resto_metodo && <Badge variant="info">Resto · {p.pago_resto_metodo}</Badge>}
+              {cb.precioN != null && <Badge variant="gold">Total {formatMonto(cb.precioN)}</Badge>}
+              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(cb.senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaDesc > 0 ? ` (-${cb.senaDesc}%)` : ''}</Badge>}
+              {cb.pagoTodo ? <Badge variant="success">Pago todo</Badge> : (cb.precioN != null && cb.saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(cb.saldoMonto)}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoDesc > 0 ? ` (-${cb.restoDesc}%)` : ''}</Badge>}
+              {cb.ahorro > 0 && <Badge variant="success">Cobrado {formatMonto(cb.totalCobrado)} · ahorro {formatMonto(cb.ahorro)}</Badge>}
               {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
             </div>
             {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
@@ -1008,7 +1043,7 @@ function Panel({ session, onSalir }) {
 
   // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
   const exportarCSV = () => {
-    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'pago_resto_metodo', 'entrega'];
+    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'sena_desc', 'pago_resto_metodo', 'resto_desc', 'entrega'];
     const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
     const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');

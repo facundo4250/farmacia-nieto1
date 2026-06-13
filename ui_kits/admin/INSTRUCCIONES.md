@@ -54,8 +54,10 @@ create table pedidos (
   receta_img text,         -- foto de la receta (ruta en el Storage)
   nro_retiro bigint,       -- número de retiro (lo asigna la empleada al señar)
   sena numeric,            -- monto de la seña
-  pago_metodo text,        -- forma de pago de la seña (Efectivo / Transferencia)
-  pago_resto_metodo text   -- forma de pago del saldo al retirar (Efectivo / Transferencia)
+  pago_metodo text,        -- forma de pago de la seña (Efectivo / Tarjeta-Transferencia)
+  pago_resto_metodo text,  -- forma de pago del saldo al retirar
+  sena_desc numeric,       -- % de descuento por efectivo en la seña (0–20)
+  resto_desc numeric       -- % de descuento por efectivo en el saldo (0–20)
 );
 
 alter table pedidos enable row level security;
@@ -88,6 +90,8 @@ Si dice **Success**, listo.
 > alter table pedidos add column if not exists sena numeric;
 > alter table pedidos add column if not exists pago_metodo text;
 > alter table pedidos add column if not exists pago_resto_metodo text;
+> alter table pedidos add column if not exists sena_desc numeric;
+> alter table pedidos add column if not exists resto_desc numeric;
 > ```
 
 ### Paso 2b — Carpeta segura para las fotos de las recetas
