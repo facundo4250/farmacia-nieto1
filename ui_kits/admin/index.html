@@ -1012,6 +1012,17 @@ function Panel({ session, onSalir }) {
     URL.revokeObjectURL(a.href);
   };
   const cambiarEstado = async (id, estado) => {
+    if (estado === 'en_preparacion') {
+      const p = pedidos.find((x) => x.id === id);
+      const tieneSena = p && Number(p.sena) > 0;
+      const tieneNro = p && p.nro_retiro != null && p.nro_retiro !== '';
+      if (!tieneSena || !tieneNro) {
+        setErrCarga('Para pasar a "En preparación" el pedido necesita una seña y un N° de retiro. Completalos en la ficha que se abrió y guardá.');
+        setForm(p);
+        return;
+      }
+    }
+    setErrCarga('');
     setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
     try { await api.actualizar(id, { estado }); } catch (e) { refrescar(); }
   };
