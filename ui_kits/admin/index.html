@@ -782,7 +782,7 @@ function ReporteDiario({ porDia, onExportar }) {
         </Card>
       )}
       <p style={{ fontSize: 12.5, color: 'var(--ink-400)', margin: 0 }}>
-        El monto generado no cuenta los pedidos cancelados. "Exportar copia" descarga un archivo con todos los pedidos para guardar de respaldo en otra computadora.
+        El monto generado es el <b>total que se cobra</b> (precio menos los descuentos por pago en efectivo) y no cuenta los pedidos cancelados. "Exportar copia" descarga un archivo con todos los pedidos para guardar de respaldo en otra computadora.
       </p>
     </div>
   );
@@ -1032,7 +1032,7 @@ function Panel({ session, onSalir }) {
       if (!m[dia]) m[dia] = { dia, orden: f.setHours(0, 0, 0, 0), cantidad: 0, entregados: 0, total: 0 };
       m[dia].cantidad += 1;
       if (p.estado === 'entregado') m[dia].entregados += 1;
-      if (p.estado !== 'cancelado') m[dia].total += Number(p.precio) || 0;
+      if (p.estado !== 'cancelado') m[dia].total += calcCobro(p).totalFinal || 0;
     });
     return Object.values(m).sort((a, b) => b.orden - a.orden);
   }, [pedidos]);
@@ -1046,7 +1046,7 @@ function Panel({ session, onSalir }) {
       if (!m[k]) m[k] = { clave: k, nombre: p.nombre, telefono: p.telefono, cantidad: 0, total: 0, ultimo: p.creado };
       const c = m[k];
       c.cantidad += 1;
-      if (p.estado !== 'cancelado') c.total += Number(p.precio) || 0;
+      if (p.estado !== 'cancelado') c.total += calcCobro(p).totalFinal || 0;
       if (p.nombre) c.nombre = p.nombre;
       if (p.telefono) c.telefono = p.telefono;
       c.ultimo = p.creado;
@@ -1106,7 +1106,7 @@ function Panel({ session, onSalir }) {
     return true;
   });
 
-  const totalMostrado = visibles.reduce((s, p) => s + (Number(p.precio) || 0), 0);
+  const totalMostrado = visibles.reduce((s, p) => s + (calcCobro(p).totalFinal || 0), 0);
   const hoy = new Date().toDateString();
   const stats = [
     ['Nuevos', counts.nuevo || 0, 'Inbox', 'var(--gold-600)'],
