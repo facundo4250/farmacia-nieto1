@@ -801,10 +801,13 @@ function comprimirImagen(file, maxLado = 1100, calidad = 0.62) {
 }
 
 /* ── Contact ──────────────────────────────────────────────── */
+const ENVIO_MIN_HORAS = 24; // cuántas horas hay que esperar entre envíos desde el mismo dispositivo
+
 function Contact({ formState }) {
   const { sent, setSent } = formState;
   const [campos, setCampos] = React.useState({ nombre: '', telefono: '', especialidad: '', detalle: '' });
   const [receta, setReceta] = React.useState('');
+  const [hp, setHp] = React.useState(''); // honeypot anti-bots (queda oculto)
   const [enviando, setEnviando] = React.useState(false);
   const [errEnvio, setErrEnvio] = React.useState('');
   const setCampo = (k) => (e) => setCampos({ ...campos, [k]: e.target.value });
@@ -818,9 +821,20 @@ function Contact({ formState }) {
 
   const enviar = async (e) => {
     e.preventDefault();
+    if (hp) { setSent(true); return; } // un bot completó el campo trampa: fingimos éxito y no enviamos
+    const telDig = (campos.telefono || '').replace(/\D/g, '');
+    if (telDig.length < 6) { setErrEnvio('Por favor ingresá un teléfono válido, con código de área.'); return; }
+    const ultimo = Number(localStorage.getItem('fn_ultimo_envio') || 0);
+    const faltan = ENVIO_MIN_HORAS * 3600000 - (Date.now() - ultimo);
+    if (ultimo && faltan > 0) {
+      const hs = Math.ceil(faltan / 3600000);
+      setErrEnvio(`Ya enviaste una consulta recientemente. Se permite una cada ${ENVIO_MIN_HORAS} h (faltan ~${hs} h). Si es urgente, escribinos por WhatsApp.`);
+      return;
+    }
     setEnviando(true); setErrEnvio('');
     try {
       await enviarPedido({ ...campos, receta_img: receta || null });
+      localStorage.setItem('fn_ultimo_envio', String(Date.now()));
       setCampos({ nombre: '', telefono: '', especialidad: '', detalle: '' });
       setReceta('');
       setSent(true);
@@ -861,9 +875,10 @@ function Contact({ formState }) {
           ) : (
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Pedí tu fórmula</h3>
+              <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
               <div className="fn-form-row">
                 <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
-                <Input label="Teléfono" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
+                <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
               </div>
               <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
               <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle')} />
