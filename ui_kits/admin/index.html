@@ -468,6 +468,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
     nro_retiro: inicial?.nro_retiro ?? '', sena: inicial?.sena ?? '', pago_metodo: inicial?.pago_metodo || '',
     pago_resto_metodo: inicial?.pago_resto_metodo || '',
     sena_desc: inicial?.sena_desc ?? '', resto_desc: inicial?.resto_desc ?? '',
+    notas_prep: inicial?.notas_prep || '',
   });
   const cb = calcCobro(f);
   const { precioN, pagoTodo, saldoMonto } = cb;
@@ -513,6 +514,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         pago_resto_metodo: f.pago_resto_metodo || null,
         sena_desc: (f.pago_metodo === 'Efectivo' && f.sena_desc !== '' && f.sena_desc != null) ? Number(f.sena_desc) : null,
         resto_desc: (f.pago_resto_metodo === 'Efectivo' && f.resto_desc !== '' && f.resto_desc != null) ? Number(f.resto_desc) : null,
+        notas_prep: f.notas_prep || null,
       };
       await onGuardar(datos, editando ? inicial.id : null);
       onCerrar();
@@ -524,7 +526,10 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
   };
 
   const hayFoto = preview || receta;
+  const cardRef = React.useRef(null);
+  React.useEffect(() => { try { cardRef.current && cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, []);
   return (
+    <div ref={cardRef} style={{ scrollMarginTop: 80 }}>
     <Card padding="lg" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--green-200)' }}>
       <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -557,6 +562,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         </div>
         <Select label="Especialidad" placeholder="Elegí una opción" options={ESPECIALIDADES} value={f.especialidad} onChange={set('especialidad')} />
         <Textarea label="Detalle de la receta / pedido" value={f.detalle} onChange={set('detalle')} placeholder="Fórmula, dosis, indicaciones…" />
+        <Textarea label="Anotaciones de preparación (la farmacéutica las completa; aparecen cuando está listo, para comentarle al cliente)" rows={2} value={f.notas_prep} onChange={set('notas_prep')} placeholder="Ej: conservar en heladera, agitar antes de usar, posibles molestias…" />
         <div className="fp-form-row">
           <Input label="Monto del preparado ($)" type="number" min="0" step="any" value={f.precio} onChange={set('precio')} placeholder="Ej: 12500" />
           <Input label="Entrega aproximada (opcional)" type="date" value={f.entrega} onChange={set('entrega')} />
@@ -626,6 +632,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         </div>
       </form>
     </Card>
+    </div>
   );
 }
 
@@ -667,6 +674,11 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
             <Badge variant={p.origen === 'web' ? 'info' : 'gold'}>{p.origen === 'web' ? 'Desde la web' : 'Carga manual'}</Badge>
           </div>
           {p.detalle && <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.detalle}</div>}
+          {p.notas_prep && (
+            <div style={{ marginTop: 8, fontSize: 13, color: p.estado === 'listo' ? 'var(--green-900)' : 'var(--ink-600)', background: p.estado === 'listo' ? 'var(--mint-100)' : 'var(--cream-200)', border: '1px solid ' + (p.estado === 'listo' ? 'var(--mint-200)' : 'var(--line-200)'), borderRadius: 'var(--radius-md)', padding: '8px 10px', lineHeight: 1.45 }}>
+              <span style={{ fontWeight: 700 }}>📝 Para el cliente: </span>{p.notas_prep}
+            </div>
+          )}
           {tieneMeta && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
               {precioN != null && <Badge variant="gold">Total {formatMonto(precioN)}</Badge>}
@@ -876,6 +888,7 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
               {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
             </div>
             {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
+            {p.notas_prep && <p style={{ fontSize: 13, color: 'var(--green-900)', background: 'var(--mint-100)', borderRadius: 'var(--radius-md)', padding: '8px 10px', margin: '8px 0 0', lineHeight: 1.45 }}><b>📝 Para el cliente: </b>{p.notas_prep}</p>}
             {p.receta_img && <div style={{ marginTop: 10 }}><RecetaThumb receta={p.receta_img} onVer={onVerReceta} onDescargar={onDescargarReceta} /></div>}
           </Card>
         );
@@ -1052,7 +1065,7 @@ function Panel({ session, onSalir }) {
 
   // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
   const exportarCSV = () => {
-    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'sena_desc', 'pago_resto_metodo', 'resto_desc', 'entrega'];
+    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'notas_prep', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'sena_desc', 'pago_resto_metodo', 'resto_desc', 'entrega'];
     const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
     const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');
