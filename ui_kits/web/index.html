@@ -660,7 +660,7 @@ function Hero({ onCta, onNav }) {
     <section id="inicio" style={{ position: 'relative', overflow: 'hidden', background: 'radial-gradient(120% 90% at 80% -10%, var(--mint-50), var(--cream-100) 55%)' }}>
       <div className="fn-hero-grid">
         <div>
-          <span className="nieto-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span className="nieto-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', maxWidth: '100%' }}>
             <Icon name="Sparkles" size={15} color="var(--gold-600)" /> Elaboración magistral · Desde 1996
           </span>
           <h1 className="fn-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--green-900)', margin: '18px 0 0' }}>
@@ -674,7 +674,7 @@ function Hero({ onCta, onNav }) {
             <Button href={waLink} target="_blank" rel="noopener noreferrer" size="lg" iconLeft={<Icon name="MessageCircle" size={18} color="#fff" />} style={{ background: '#25D366', color: '#fff', borderColor: 'transparent' }}>WhatsApp</Button>
             <Button variant="outline" size="lg" onClick={() => onNav('especialidades')}>Conocé las especialidades</Button>
           </div>
-          <div style={{ display: 'flex', gap: 30, marginTop: 40 }}>
+          <div style={{ display: 'flex', gap: 30, marginTop: 40, flexWrap: 'wrap' }}>
             {[['Desde', '1996'], ['Especialidades', '8'], ['Atención', 'Personalizada']].map(([k, v]) => (
               <div key={k}>
                 <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 26, color: 'var(--green-800)' }}>{v}</div>
@@ -921,7 +921,7 @@ function Contact({ formState }) {
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Pedí tu fórmula</h3>
               {!SUPA_ON && <Alert variant="warning" title="Modo de prueba">Este archivo no está conectado a la nube, así que el pedido se guarda solo en esta computadora y no llega al panel. Asegurate de abrir la web desde la carpeta completa (con el archivo config.js al lado).</Alert>}
-              <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+              <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, border: 0, opacity: 0, overflow: 'hidden', clipPath: 'inset(50%)', pointerEvents: 'none' }} />
               <div className="fn-form-row">
                 <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
                 <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
