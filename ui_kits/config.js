@@ -1,18 +1,16 @@
 /* ============================================================
    Farmacia Nieto — Configuración de la nube (Supabase)
 
-   Seguí los pasos de ui_kits/admin/INSTRUCCIONES.md y después
-   pegá acá tus dos datos. Mientras estén los valores de ejemplo,
-   la web y el panel funcionan en "modo de prueba" (los pedidos
-   se guardan solo en esta computadora).
+   Ya está conectado a tu proyecto de Supabase. La web y el panel
+   guardan los pedidos en la nube y se ven en todas las computadoras.
    ============================================================ */
 
 window.FN_CONFIG = {
-  // Pegá acá la "Project URL" de tu proyecto de Supabase:
-  SUPABASE_URL: 'https://TU-PROYECTO.supabase.co',
+  // Project URL de tu proyecto de Supabase:
+  SUPABASE_URL: 'https://lajtqymtkerkfmwhiiju.supabase.co',
 
-  // Pegá acá la clave "anon public" de tu proyecto:
-  SUPABASE_ANON_KEY: 'TU-CLAVE-ANON',
+  // Clave pública (anon / publishable) — está pensada para ir en la web:
+  SUPABASE_ANON_KEY: 'sb_publishable_zbgoYgAzOWQaY-o4whPfxQ_qIFVEhDc',
 
   // Contraseña para poder BORRAR pedidos en el panel.
   // Cambiala por una que sepan solo vos y las personas de confianza:
