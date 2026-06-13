@@ -275,11 +275,14 @@ async function subirReceta(file) {
   if (error) throw error;
   return path;
 }
-async function verReceta(receta) {
-  if (!receta) return;
-  if (receta.startsWith('data:') || receta.startsWith('http')) { window.open(receta, '_blank'); return; }
+// Devuelve una URL mostrable de la receta. En modo prueba es el propio
+// dataURL; con Supabase genera un enlace temporal y seguro (1 hora).
+async function resolverReceta(receta) {
+  if (!receta) return '';
+  if (receta.startsWith('data:') || receta.startsWith('http')) return receta;
   const { data, error } = await supa.storage.from('recetas').createSignedUrl(receta, 3600);
-  if (!error && data) window.open(data.signedUrl, '_blank');
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -425,7 +428,7 @@ function Login({ onOk }) {
 /* ════════════════════════════════════════════════════════════
    Formulario de carga manual
    ════════════════════════════════════════════════════════════ */
-function PedidoForm({ inicial, onGuardar, onCerrar }) {
+function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta }) {
   const editando = !!(inicial && inicial.id);
   const [f, setF] = React.useState({
     nombre: inicial?.nombre || '', telefono: inicial?.telefono || '',
@@ -493,7 +496,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar }) {
                 ? <img src={preview} alt="receta" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)' }} />
                 : <span style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)' }}><Icon name="FileText" size={26} color="var(--green-600)" /></span>}
               <div style={{ display: 'flex', gap: 8 }}>
-                {!preview && receta && <Button variant="outline" size="sm" onClick={() => verReceta(receta)} iconLeft={<Icon name="Eye" size={15} />}>Ver</Button>}
+                {!preview && receta && <Button variant="outline" size="sm" onClick={() => onVerReceta(receta)} iconLeft={<Icon name="Eye" size={15} />}>Ver</Button>}
                 <Button variant="ghost" size="sm" onClick={quitarFoto} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>
               </div>
             </div>
@@ -524,7 +527,7 @@ function fechaCorta(iso) {
          d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function PedidoRow({ p, onEstado, onEditar }) {
+function PedidoRow({ p, onEstado, onEditar, onVerReceta }) {
   const tieneMeta = (p.precio || p.precio === 0) || p.entrega || p.receta_img;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
@@ -553,7 +556,7 @@ function PedidoRow({ p, onEstado, onEditar }) {
                 </span>
               )}
               {p.receta_img && (
-                <button onClick={() => verReceta(p.receta_img)}
+                <button onClick={() => onVerReceta(p.receta_img)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: 'var(--green-700)', background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 'var(--radius-pill)', padding: '3px 10px', cursor: 'pointer' }}>
                   <Icon name="Paperclip" size={13} color="var(--green-700)" /> Ver receta
                 </button>
@@ -595,6 +598,65 @@ const TABS = [
   ['cancelado', 'Cancelados'],
 ];
 
+/* ════════════════════════════════════════════════════════════
+   Resumen por día — cantidad de pedidos y montos generados
+   ════════════════════════════════════════════════════════════ */
+function ReporteDiario({ porDia, onExportar }) {
+  const totalGeneral = porDia.reduce((s, d) => s + d.total, 0);
+  const pedidosGeneral = porDia.reduce((s, d) => s + d.cantidad, 0);
+  const th = { textAlign: 'left', fontSize: 11.5, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 700, padding: '0 14px 10px' };
+  const td = { padding: '11px 14px', borderTop: '1px solid var(--line-200)', fontSize: 14, color: 'var(--ink-700)' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <h3 style={{ fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Resumen por día</h3>
+        <Button variant="outline" size="sm" onClick={onExportar} iconLeft={<Icon name="Download" size={15} />}>Exportar copia (Excel)</Button>
+      </div>
+      {porDia.length === 0 ? (
+        <Card padding="lg" style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--ink-500)', margin: '12px 0' }}>Todavía no hay pedidos para mostrar.</p>
+        </Card>
+      ) : (
+        <Card padding="md">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)' }}>
+              <thead>
+                <tr>
+                  <th style={th}>Fecha</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Pedidos</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Entregados</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Monto generado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {porDia.map((d) => (
+                  <tr key={d.dia}>
+                    <td style={{ ...td, fontWeight: 600, color: 'var(--green-900)' }}>{d.dia}</td>
+                    <td style={{ ...td, textAlign: 'right' }}>{d.cantidad}</td>
+                    <td style={{ ...td, textAlign: 'right' }}>{d.entregados}</td>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: 'var(--green-800)' }}>{formatMonto(d.total) || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td style={{ ...td, fontWeight: 700, borderTop: '2px solid var(--line-300)' }}>Total</td>
+                  <td style={{ ...td, textAlign: 'right', fontWeight: 700, borderTop: '2px solid var(--line-300)' }}>{pedidosGeneral}</td>
+                  <td style={{ ...td, borderTop: '2px solid var(--line-300)' }}></td>
+                  <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: 'var(--green-900)', borderTop: '2px solid var(--line-300)' }}>{formatMonto(totalGeneral) || '—'}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
+      <p style={{ fontSize: 12.5, color: 'var(--ink-400)', margin: 0 }}>
+        El monto generado no cuenta los pedidos cancelados. "Exportar copia" descarga un archivo con todos los pedidos para guardar de respaldo en otra computadora.
+      </p>
+    </div>
+  );
+}
+
 function Panel({ session, onSalir }) {
   const [pedidos, setPedidos] = React.useState([]);
   const [tab, setTab] = React.useState('todos');
@@ -602,6 +664,8 @@ function Panel({ session, onSalir }) {
   const [cargando, setCargando] = React.useState(true);
   const [errCarga, setErrCarga] = React.useState('');
   const [form, setForm] = React.useState(null); // null = cerrado · {} = nuevo · pedido = editar
+  const [recetaVer, setRecetaVer] = React.useState(null); // { url } de la foto a mostrar
+  const [vista, setVista] = React.useState('pedidos');    // 'pedidos' | 'resumen'
 
   const refrescar = React.useCallback(async () => {
     try {
@@ -623,6 +687,37 @@ function Panel({ session, onSalir }) {
     if (id) await api.actualizar(id, datos);
     else await api.crear({ ...datos, origen: 'manual', estado: 'nuevo' });
     await refrescar();
+  };
+  const abrirReceta = async (receta) => {
+    try { setRecetaVer({ url: await resolverReceta(receta) }); }
+    catch (e) { setErrCarga('No se pudo abrir la foto de la receta.'); }
+  };
+
+  // Agrupado por día: cantidad de pedidos, entregados y monto generado.
+  const porDia = React.useMemo(() => {
+    const m = {};
+    pedidos.forEach((p) => {
+      const f = new Date(p.creado);
+      const dia = f.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      if (!m[dia]) m[dia] = { dia, orden: f.setHours(0, 0, 0, 0), cantidad: 0, entregados: 0, total: 0 };
+      m[dia].cantidad += 1;
+      if (p.estado === 'entregado') m[dia].entregados += 1;
+      if (p.estado !== 'cancelado') m[dia].total += Number(p.precio) || 0;
+    });
+    return Object.values(m).sort((a, b) => b.orden - a.orden);
+  }, [pedidos]);
+
+  // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
+  const exportarCSV = () => {
+    const cols = ['creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'entrega'];
+    const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
+    const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'pedidos-farmacia-nieto-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
   const cambiarEstado = async (id, estado) => {
     setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
@@ -655,7 +750,15 @@ function Panel({ session, onSalir }) {
           <img src={`${ASSETS}/emblem-nieto.png`} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
           <Wordmark />
           <span className="nieto-eyebrow" style={{ marginLeft: 4, paddingLeft: 16, borderLeft: '1px solid var(--line-300)' }}>Panel de pedidos</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'var(--green-50)', borderRadius: 'var(--radius-pill)', padding: 3 }}>
+            {[['pedidos', 'Pedidos', 'ListChecks'], ['resumen', 'Resumen', 'BarChart3']].map(([id, label, ic]) => (
+              <button key={id} onClick={() => setVista(id)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, padding: '6px 13px', borderRadius: 'var(--radius-pill)', color: vista === id ? 'var(--cream-50)' : 'var(--green-800)', background: vista === id ? 'var(--green-900)' : 'transparent' }}>
+                <Icon name={ic} size={14} color={vista === id ? 'var(--cream-50)' : 'var(--green-700)'} /> {label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {session && <span className="fp-header-meta" style={{ fontSize: 13, color: 'var(--ink-400)', fontWeight: 600 }}>{session.user.email}</span>}
             <Button variant="ghost" size="sm" onClick={refrescar} iconLeft={<Icon name="RotateCcw" size={15} />}>Actualizar</Button>
             {session && <Button variant="outline" size="sm" onClick={onSalir} iconLeft={<Icon name="LogOut" size={15} />}>Salir</Button>}
@@ -687,6 +790,9 @@ function Panel({ session, onSalir }) {
           ))}
         </div>
 
+        {vista === 'resumen' ? (
+          <ReporteDiario porDia={porDia} onExportar={exportarCSV} />
+        ) : (<>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {TABS.map(([id, label]) => (
@@ -708,7 +814,7 @@ function Panel({ session, onSalir }) {
           </div>
         </div>
 
-        {form && <PedidoForm inicial={form} onGuardar={guardar} onCerrar={() => setForm(null)} />}
+        {form && <PedidoForm inicial={form} onGuardar={guardar} onCerrar={() => setForm(null)} onVerReceta={abrirReceta} />}
 
         {!cargando && visibles.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--ink-500)', fontWeight: 600, padding: '0 4px' }}>
@@ -736,9 +842,23 @@ function Panel({ session, onSalir }) {
               </div>
             </Card>
           )}
-          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} onEditar={setForm} />)}
+          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} onEditar={setForm} onVerReceta={abrirReceta} />)}
         </div>
+        </>)}
       </main>
+
+      {recetaVer && (
+        <div onClick={() => setRecetaVer(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(20,52,32,.72)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', maxWidth: 'min(92vw, 820px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--cream-50)', fontWeight: 600, fontSize: 14 }}>Foto de la receta</span>
+              <Button variant="ghost" size="sm" onClick={() => setRecetaVer(null)} style={{ color: 'var(--cream-50)' }} iconLeft={<Icon name="X" size={16} color="var(--cream-50)" />}>Cerrar</Button>
+            </div>
+            <img src={recetaVer.url} alt="Receta" style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 52px)', objectFit: 'contain', borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
