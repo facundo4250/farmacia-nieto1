@@ -201,7 +201,8 @@ const api = {
   async crear(p) {
     if (!SUPA_ON) {
       const arr = lsRead();
-      arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', ...p });
+      const nro = arr.reduce((m, x) => Math.max(m, x.nro_retiro || 0), 0) + 1;
+      arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', nro_retiro: nro, ...p });
       lsWrite(arr);
       return;
     }
@@ -440,7 +441,7 @@ function Login({ onOk }) {
 /* ════════════════════════════════════════════════════════════
    Formulario de carga manual
    ════════════════════════════════════════════════════════════ */
-function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar }) {
+function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clientes = [] }) {
   const editando = !!(inicial && inicial.id);
   const [f, setF] = React.useState({
     nombre: inicial?.nombre || '', telefono: inicial?.telefono || '',
@@ -452,7 +453,15 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar }) {
   const [archivo, setArchivo] = React.useState(null);                     // File a subir
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState('');
+  const [busca, setBusca] = React.useState('');                           // buscar paciente existente
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  const qDig = busca.replace(/\D/g, '');
+  const matches = !busca.trim() ? [] : clientes.filter((c) =>
+    (c.nombre || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (qDig && (c.telefono || '').replace(/\D/g, '').includes(qDig))
+  ).slice(0, 6);
+  const elegirPaciente = (c) => { setF({ ...f, nombre: c.nombre || '', telefono: c.telefono || '' }); setBusca(''); };
 
   const elegirFoto = async (e) => {
     const file = e.target.files[0];
@@ -490,6 +499,26 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar }) {
           <h3 style={{ fontSize: 22, color: 'var(--green-900)' }}>{editando ? 'Editar pedido' : 'Cargar pedido a mano'}</h3>
           <Button variant="ghost" size="sm" onClick={onCerrar} iconLeft={<Icon name="X" size={16} />}>Cerrar</Button>
         </div>
+        {!editando && (
+          <div className="fn-field" style={{ position: 'relative' }}>
+            <span className="fn-field__label">Buscar paciente existente <span style={{ fontWeight: 500, color: 'var(--ink-400)' }}>(por teléfono o nombre — opcional)</span></span>
+            <input className="fn-input" placeholder="Escribí un teléfono o nombre…" value={busca} onChange={(e) => setBusca(e.target.value)} autoComplete="off" />
+            {matches.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 5, marginTop: 4, background: 'var(--white)', border: '1px solid var(--line-300)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', overflow: 'hidden', maxHeight: 230, overflowY: 'auto' }}>
+                {matches.map((c) => (
+                  <button type="button" key={c.clave} onClick={() => elegirPaciente(c)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%', textAlign: 'left', border: 'none', borderBottom: '1px solid var(--line-100)', background: 'transparent', cursor: 'pointer', padding: '10px 12px', fontFamily: 'var(--font-sans)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-50)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                    <span><span style={{ fontWeight: 600, color: 'var(--green-900)' }}>{c.nombre || '—'}</span> <span style={{ color: 'var(--ink-500)', fontSize: 13 }}>· {c.telefono}</span></span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-400)', fontWeight: 600, whiteSpace: 'nowrap' }}>{c.cantidad} {c.cantidad === 1 ? 'pedido' : 'pedidos'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {busca.trim() && matches.length === 0 && <span className="fn-field__hint" style={{ color: 'var(--ink-400)' }}>Sin coincidencias. Cargá los datos abajo como paciente nuevo.</span>}
+          </div>
+        )}
         <div className="fp-form-row">
           <Input label="Nombre y apellido" required value={f.nombre} onChange={set('nombre')} placeholder="Nombre del paciente" />
           <Input label="Teléfono" required value={f.telefono} onChange={set('telefono')} placeholder="291 …" />
@@ -549,6 +578,11 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
       <div style={{ width: 5, flex: 'none', background: p.estado === 'nuevo' ? 'var(--gold-500)' : p.estado === 'en_preparacion' ? 'var(--info)' : p.estado === 'listo' ? 'var(--green-600)' : 'var(--line-300)' }} />
       <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20, flex: 1, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 190 }}>
+          {p.nro_retiro != null && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--gold-100)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', marginBottom: 5 }}>
+              <Icon name="Hash" size={12} color="var(--wood-700)" /> Retiro {p.nro_retiro}
+            </div>
+          )}
           <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 18, color: 'var(--green-900)', lineHeight: 1.2 }}>{p.nombre}</div>
           <div style={{ fontSize: 13, color: 'var(--ink-500)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
             <Icon name="Phone" size={13} color="var(--ink-400)" /> {p.telefono}
@@ -749,7 +783,10 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
         return (
           <Card key={p.id} padding="md">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600, color: 'var(--green-900)' }}>{fechaCorta(p.creado)}</span>
+              <span style={{ fontWeight: 600, color: 'var(--green-900)' }}>
+                {p.nro_retiro != null && <span style={{ color: 'var(--wood-700)', marginRight: 8 }}>Retiro {p.nro_retiro}</span>}
+                {fechaCorta(p.creado)}
+              </span>
               <Badge variant={est.badge} dot>{est.label}</Badge>
             </div>
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 6 }}>
@@ -772,19 +809,31 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
 function ClientesView({ clientes, pedidos, onVerReceta, onDescargarReceta }) {
   const [q, setQ] = React.useState('');
   const [sel, setSel] = React.useState(null);
+  const [soloTop, setSoloTop] = React.useState(true);
   const cli = sel ? clientes.find((c) => c.clave === sel) : null;
   if (cli) return <ClienteHistorial cliente={cli} pedidos={pedidos} onVolver={() => setSel(null)} onVerReceta={onVerReceta} onDescargarReceta={onDescargarReceta} />;
 
   const norm = (s) => (s || '').toLowerCase();
-  const lista = clientes.filter((c) => !q || norm(c.nombre).includes(norm(q)) || (c.telefono || '').includes(q));
+  const rankByClave = {};
+  clientes.forEach((c, i) => { rankByClave[c.clave] = i + 1; }); // clientes ya viene ordenado por cantidad
+  const medalla = (r) => (r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : '');
+  const filtrados = clientes.filter((c) => !q || norm(c.nombre).includes(norm(q)) || (c.telefono || '').includes(q));
+  const lista = (soloTop && !q) ? filtrados.slice(0, 50) : filtrados;
   const recurrentes = clientes.filter((c) => c.cantidad >= 2).length;
   const th = { textAlign: 'left', fontSize: 11.5, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 700, padding: '0 14px 10px' };
   const td = { padding: '11px 14px', borderTop: '1px solid var(--line-200)', fontSize: 14, color: 'var(--ink-700)' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <h3 style={{ fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Clientes <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--ink-400)' }}>· {clientes.length} en total, {recurrentes} recurrentes</span></h3>
-        <input className="fn-input fp-search" style={{ padding: '.55rem .95rem', fontSize: 14 }} placeholder="Buscar cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <h3 style={{ fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Ranking de clientes <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--ink-400)' }}>· {clientes.length} en total, {recurrentes} recurrentes</span></h3>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 2, background: 'var(--green-50)', borderRadius: 'var(--radius-pill)', padding: 3 }}>
+            {[['top', 'Top 50', true], ['todos', 'Todos', false]].map(([id, label, val]) => (
+              <button key={id} onClick={() => setSoloTop(val)} style={{ border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, padding: '6px 12px', borderRadius: 'var(--radius-pill)', color: soloTop === val ? 'var(--cream-50)' : 'var(--green-800)', background: soloTop === val ? 'var(--green-900)' : 'transparent' }}>{label}</button>
+            ))}
+          </div>
+          <input className="fn-input fp-search" style={{ padding: '.55rem .95rem', fontSize: 14 }} placeholder="Buscar cliente…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
       </div>
       {lista.length === 0 ? (
         <Card padding="lg" style={{ textAlign: 'center' }}>
@@ -796,6 +845,7 @@ function ClientesView({ clientes, pedidos, onVerReceta, onDescargarReceta }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)' }}>
               <thead>
                 <tr>
+                  <th style={{ ...th, textAlign: 'center', width: 52 }}>#</th>
                   <th style={th}>Cliente</th>
                   <th style={th}>Teléfono</th>
                   <th style={{ ...th, textAlign: 'right' }}>Pedidos</th>
@@ -809,6 +859,7 @@ function ClientesView({ clientes, pedidos, onVerReceta, onDescargarReceta }) {
                   <tr key={c.clave} onClick={() => setSel(c.clave)} style={{ cursor: 'pointer' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-50)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                    <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: 'var(--green-800)', fontSize: rankByClave[c.clave] <= 3 ? 18 : 14 }}>{medalla(rankByClave[c.clave]) || rankByClave[c.clave]}</td>
                     <td style={{ ...td, fontWeight: 600, color: 'var(--green-900)' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {c.nombre || '—'}
@@ -920,7 +971,7 @@ function Panel({ session, onSalir }) {
 
   // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
   const exportarCSV = () => {
-    const cols = ['creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'entrega'];
+    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'estado', 'origen', 'precio', 'entrega'];
     const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
     const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');
@@ -1027,7 +1078,7 @@ function Panel({ session, onSalir }) {
           </div>
         </div>
 
-        {form && <PedidoForm inicial={form} onGuardar={guardar} onCerrar={() => setForm(null)} onVerReceta={abrirReceta} onBorrar={setBorrarId} />}
+        {form && <PedidoForm inicial={form} onGuardar={guardar} onCerrar={() => setForm(null)} onVerReceta={abrirReceta} onBorrar={setBorrarId} clientes={clientesLista} />}
 
         {!cargando && visibles.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--ink-500)', fontWeight: 600, padding: '0 4px' }}>
