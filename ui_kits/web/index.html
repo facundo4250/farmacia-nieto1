@@ -349,6 +349,48 @@ button { font-family: inherit; }
   transform: translateY(-65%) rotate(45deg); pointer-events: none; border-radius: 1px;
 }
 .fn-textarea { resize: vertical; min-height: 108px; line-height: 1.6; font-family: var(--font-sans); }
+
+/* ── Layout shells (responsive) ───────────────────────────── */
+.fn-header-inner { max-width: 1160px; margin: 0 auto; padding: 14px 28px; display: flex; align-items: center; gap: 28px; }
+.fn-nav { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+.fn-hero-grid { max-width: 1160px; margin: 0 auto; padding: 72px 28px 84px; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.fn-hero-title { font-size: 60px; }
+.fn-hero-art { width: 320px; height: 320px; }
+.fn-spec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.fn-about-grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 56px; align-items: center; }
+.fn-process-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; position: relative; }
+.fn-contact-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: start; }
+.fn-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fn-section { padding: 88px 28px; }
+.fn-section-title { font-size: 42px; }
+.fn-h2-40 { font-size: 40px; }
+
+/* ── Tablet ───────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .fn-spec-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 860px) {
+  .fn-nav { display: none; }
+  .fn-header-cta { margin-left: auto; }
+}
+
+/* ── Phone (apilado en una sola columna) ──────────────────── */
+@media (max-width: 780px) {
+  .fn-hero-grid { grid-template-columns: 1fr; gap: 36px; padding: 48px 22px 56px; }
+  .fn-hero-title { font-size: clamp(34px, 9vw, 46px); }
+  .fn-about-grid { grid-template-columns: 1fr; gap: 40px; }
+  .fn-process-grid { grid-template-columns: 1fr; gap: 30px; }
+  .fn-contact-grid { grid-template-columns: 1fr; gap: 32px; }
+  .fn-section { padding: 56px 22px; }
+  .fn-section-title { font-size: clamp(26px, 7vw, 34px); }
+  .fn-h2-40 { font-size: clamp(26px, 7vw, 32px); }
+}
+@media (max-width: 540px) {
+  .fn-spec-grid { grid-template-columns: 1fr; }
+  .fn-form-row { grid-template-columns: 1fr; }
+  .fn-header-inner { padding: 12px 16px; gap: 12px; }
+  .fn-hero-art { width: 100%; max-width: 260px; height: auto; aspect-ratio: 1 / 1; }
+}
 </style>
 </head>
 <body>
@@ -507,12 +549,12 @@ const NAV = [
 function Header({ active, onNav, onCta }) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'color-mix(in oklab, var(--cream-100) 88%, transparent)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line-200)' }}>
-      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 28 }}>
+      <div className="fn-header-inner">
         <a href="#inicio" onClick={(e) => { e.preventDefault(); onNav('inicio'); }} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
           <img src={`${ASSETS}/emblem-nieto.png`} alt="" style={{ width: 44, height: 44, objectFit: 'contain' }} />
           <Wordmark />
         </a>
-        <nav style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+        <nav className="fn-nav">
           {NAV.map((n) => (
             <a key={n.id} href={`#${n.id}`}
               onClick={(e) => { e.preventDefault(); onNav(n.id); }}
@@ -527,7 +569,7 @@ function Header({ active, onNav, onCta }) {
             </a>
           ))}
         </nav>
-        <Button variant="primary" size="sm" onClick={onCta} iconLeft={<Icon name="FlaskConical" size={16} />}>Pedí tu fórmula</Button>
+        <Button className="fn-header-cta" variant="primary" size="sm" onClick={onCta} iconLeft={<Icon name="FlaskConical" size={16} />}>Pedí tu fórmula</Button>
       </div>
     </header>
   );
@@ -537,12 +579,12 @@ function Header({ active, onNav, onCta }) {
 function Hero({ onCta, onNav }) {
   return (
     <section id="inicio" style={{ position: 'relative', overflow: 'hidden', background: 'radial-gradient(120% 90% at 80% -10%, var(--mint-50), var(--cream-100) 55%)' }}>
-      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '72px 28px 84px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 56, alignItems: 'center' }}>
+      <div className="fn-hero-grid">
         <div>
           <span className="nieto-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <Icon name="Sparkles" size={15} color="var(--gold-600)" /> Elaboración magistral · Desde 1996
           </span>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 60, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--green-900)', margin: '18px 0 0' }}>
+          <h1 className="fn-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--green-900)', margin: '18px 0 0' }}>
             Tu camino hacia<br />el <span style={{ fontStyle: 'italic', color: 'var(--green-600)' }}>bienestar</span>
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.7, color: 'var(--ink-600)', maxWidth: 480, margin: '20px 0 30px' }}>
@@ -564,7 +606,7 @@ function Hero({ onCta, onNav }) {
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: '6% 12%', background: 'var(--green-300)', borderRadius: '46% 54% 58% 42% / 52% 44% 56% 48%', opacity: .35, filter: 'blur(4px)' }} />
           <div style={{ position: 'relative', background: 'var(--mint-100)', borderRadius: 'var(--radius-2xl)', padding: 26, boxShadow: 'var(--shadow-xl)' }}>
-            <img src={`${ASSETS}/logo-nieto.png`} alt="Farmacia Nieto" style={{ width: 320, height: 320, objectFit: 'contain', borderRadius: 'var(--radius-xl)' }} />
+            <img className="fn-hero-art" src={`${ASSETS}/logo-nieto.png`} alt="Farmacia Nieto" style={{ objectFit: 'contain', borderRadius: 'var(--radius-xl)' }} />
           </div>
           <div style={{ position: 'absolute', bottom: 6, left: -6, background: 'var(--cream-50)', borderRadius: 'var(--radius-pill)', padding: '9px 16px', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 9 }}>
             <Icon name="Leaf" size={17} color="var(--green-600)" />
@@ -590,14 +632,14 @@ const SPECIALTIES = [
 
 function Specialties({ onCta }) {
   return (
-    <section id="especialidades" style={{ background: 'var(--cream-100)', padding: '88px 28px' }}>
+    <section id="especialidades" className="fn-section" style={{ background: 'var(--cream-100)' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', maxWidth: 620, margin: '0 auto 48px' }}>
           <span className="nieto-eyebrow">Lo que preparamos</span>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 42, color: 'var(--green-900)', margin: '12px 0 14px', lineHeight: 1.08 }}>Ocho especialidades, una sola forma de cuidarte</h2>
+          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 14px', lineHeight: 1.08 }}>Ocho especialidades, una sola forma de cuidarte</h2>
           <p style={{ fontSize: 16.5, lineHeight: 1.65, color: 'var(--ink-500)', margin: 0 }}>Cada preparado se elabora artesanalmente en nuestro laboratorio, siguiendo tu receta y tus necesidades.</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+        <div className="fn-spec-grid">
           {SPECIALTIES.map(([icon, name, desc]) => (
             <Card key={name} interactive>
               <span style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--green-100)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
@@ -619,8 +661,8 @@ function Specialties({ onCta }) {
 /* ── About Patricia ───────────────────────────────────────── */
 function About() {
   return (
-    <section id="nosotros" style={{ background: 'var(--green-500)', padding: '88px 28px', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: 56, alignItems: 'center' }}>
+    <section id="nosotros" className="fn-section" style={{ background: 'var(--green-500)', position: 'relative', overflow: 'hidden' }}>
+      <div className="fn-about-grid">
         <div style={{ position: 'relative' }}>
           <div style={{ background: 'var(--mint-100)', borderRadius: 'var(--radius-2xl)', padding: 16, boxShadow: 'var(--shadow-xl)', width: 'fit-content' }}>
             <div style={{ width: 250, height: 320, borderRadius: 'var(--radius-xl)', overflow: 'hidden', background: 'var(--green-200)' }}>
@@ -634,7 +676,7 @@ function About() {
         </div>
         <div style={{ color: 'var(--cream-50)' }}>
           <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--gold-300)' }}>Acerca de nosotros</span>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 40, color: 'var(--cream-50)', margin: '14px 0 18px', lineHeight: 1.1 }}>Detrás de cada fórmula, un equipo que te cuida</h2>
+          <h2 className="fn-h2-40" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--cream-50)', margin: '14px 0 18px', lineHeight: 1.1 }}>Detrás de cada fórmula, un equipo que te cuida</h2>
           <p style={{ fontSize: 17, lineHeight: 1.75, opacity: .96, margin: '0 0 16px' }}>
             Bajo la dirección técnica de Patricia Victoria Nieto, una farmacéutica con una larga trayectoria, contamos con un equipo de profesionales altamente capacitados.
           </p>
@@ -661,13 +703,13 @@ const STEPS = [
 
 function Process() {
   return (
-    <section id="proceso" style={{ background: 'var(--cream-100)', padding: '88px 28px' }}>
+    <section id="proceso" className="fn-section" style={{ background: 'var(--cream-100)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 50 }}>
           <span className="nieto-eyebrow">Cómo trabajamos</span>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 42, color: 'var(--green-900)', margin: '12px 0 0' }}>Tu fórmula en tres pasos</h2>
+          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 0' }}>Tu fórmula en tres pasos</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22, position: 'relative' }}>
+        <div className="fn-process-grid">
           {STEPS.map(([icon, title, desc], i) => (
             <div key={title} style={{ position: 'relative', textAlign: 'center', padding: '0 8px' }}>
               <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'var(--cream-50)', border: '2px solid var(--green-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: 'var(--shadow-sm)', position: 'relative' }}>
@@ -732,11 +774,11 @@ function Contact({ formState }) {
     setEnviando(false);
   };
   return (
-    <section id="contacto" style={{ background: 'var(--mint-50)', padding: '88px 28px' }}>
-      <div style={{ maxWidth: 1080, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 48, alignItems: 'start' }}>
+    <section id="contacto" className="fn-section" style={{ background: 'var(--mint-50)' }}>
+      <div className="fn-contact-grid">
         <div>
           <span className="nieto-eyebrow">Estamos para ayudarte</span>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 40, color: 'var(--green-900)', margin: '12px 0 14px', lineHeight: 1.1 }}>Para más asesoramiento y consultas, comunicate con nosotros</h2>
+          <h2 className="fn-h2-40" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 14px', lineHeight: 1.1 }}>Para más asesoramiento y consultas, comunicate con nosotros</h2>
           <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--ink-500)', margin: '0 0 28px' }}>Cuidamos de ti de manera personalizada. Escribinos y te respondemos a la brevedad.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[['Phone', '(+54) 291 432-7031', 'WhatsApp'], ['Mail', 'farmacia_nieto@hotmail.com', 'Email'], ['Instagram', '@farmacia.nieto', 'Instagram']].map(([icon, val, lbl]) => (
@@ -763,7 +805,7 @@ function Contact({ formState }) {
           ) : (
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Pedí tu fórmula</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="fn-form-row">
                 <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
                 <Input label="Teléfono" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
               </div>

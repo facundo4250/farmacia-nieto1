@@ -151,6 +151,26 @@ button{ font-family:inherit; }
 .fp-tab--active .fp-tab__count{ background:rgba(255,255,255,.18); }
 .fp-row{ transition:box-shadow var(--dur-base) var(--ease-soft); }
 .fp-row:hover{ box-shadow:var(--shadow-md); }
+
+/* ── Layout shells (responsive) ───────────────────────────── */
+.fp-header-inner{ max-width:1160px; margin:0 auto; padding:12px 28px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.fp-main{ max-width:1160px; margin:0 auto; padding:28px 28px 64px; display:flex; flex-direction:column; gap:22px; }
+.fp-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.fp-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.fp-search{ width:230px; }
+
+@media (max-width:860px){
+  .fp-stats{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:600px){
+  .fp-header-inner{ padding:12px 16px; gap:10px; }
+  .fp-header-meta{ display:none; }
+  .fp-main{ padding:20px 16px 48px; }
+  .fp-form-row{ grid-template-columns:1fr; }
+  .fp-toolbar-actions{ margin-left:0 !important; width:100%; }
+  .fp-search-wrap{ flex:1; }
+  .fp-search{ width:100%; }
+}
 </style>
 </head>
 <body>
@@ -386,7 +406,7 @@ function NuevoPedido({ onCrear, onCerrar }) {
           <h3 style={{ fontSize: 22, color: 'var(--green-900)' }}>Cargar pedido a mano</h3>
           <Button variant="ghost" size="sm" onClick={onCerrar} iconLeft={<Icon name="X" size={16} />}>Cerrar</Button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="fp-form-row">
           <Input label="Nombre y apellido" required value={f.nombre} onChange={set('nombre')} placeholder="Nombre del paciente" />
           <Input label="Teléfono" required value={f.telefono} onChange={set('telefono')} placeholder="291 …" />
         </div>
@@ -516,19 +536,19 @@ function Panel({ session, onSalir }) {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'color-mix(in oklab, var(--cream-100) 88%, transparent)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line-200)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="fp-header-inner">
           <img src={`${ASSETS}/emblem-nieto.png`} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
           <Wordmark />
           <span className="nieto-eyebrow" style={{ marginLeft: 4, paddingLeft: 16, borderLeft: '1px solid var(--line-300)' }}>Panel de pedidos</span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            {session && <span style={{ fontSize: 13, color: 'var(--ink-400)', fontWeight: 600 }}>{session.user.email}</span>}
+            {session && <span className="fp-header-meta" style={{ fontSize: 13, color: 'var(--ink-400)', fontWeight: 600 }}>{session.user.email}</span>}
             <Button variant="ghost" size="sm" onClick={refrescar} iconLeft={<Icon name="RotateCcw" size={15} />}>Actualizar</Button>
             {session && <Button variant="outline" size="sm" onClick={onSalir} iconLeft={<Icon name="LogOut" size={15} />}>Salir</Button>}
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: 1160, margin: '0 auto', padding: '28px 28px 64px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <main className="fp-main">
         {!SUPA_ON && (
           <Alert variant="warning" title="Modo de prueba — los pedidos se guardan solo en esta computadora">
             Para que los pedidos de la página web lleguen acá automáticamente y queden guardados en la nube, seguí los pasos de INSTRUCCIONES.md (en esta misma carpeta).
@@ -536,7 +556,7 @@ function Panel({ session, onSalir }) {
         )}
         {errCarga && <Alert variant="danger">{errCarga}</Alert>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <div className="fp-stats">
           {stats.map(([label, n, icono, color]) => (
             <Card key={label}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -561,12 +581,12 @@ function Panel({ session, onSalir }) {
               </button>
             ))}
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ position: 'relative' }}>
+          <div className="fp-toolbar-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="fp-search-wrap" style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
                 <Icon name="Search" size={16} color="var(--ink-300)" />
               </span>
-              <input className="fn-input" style={{ paddingLeft: '2.4rem', width: 230, padding: '.55rem .95rem .55rem 2.4rem', fontSize: 14 }}
+              <input className="fn-input fp-search" style={{ padding: '.55rem .95rem .55rem 2.4rem', fontSize: 14 }}
                 placeholder="Buscar nombre, teléfono…" value={busca} onChange={(e) => setBusca(e.target.value)} />
             </div>
             <Button variant="accent" onClick={() => setMostrarForm(true)} iconLeft={<Icon name="Plus" size={17} />}>Cargar pedido</Button>
