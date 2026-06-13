@@ -236,6 +236,52 @@ const ESPECIALIDADES = [
   'Fitoterapia', 'Florales', 'Probióticos', 'Hormonas Bioidénticas', 'Otro',
 ];
 
+/* ── Monto y fechas ─────────────────────────────────────────── */
+const formatMonto = (n) =>
+  (n || n === 0) && !isNaN(Number(n)) ? '$ ' + Number(n).toLocaleString('es-AR') : '';
+const formatEntrega = (d) => {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+};
+
+/* ── Fotos de recetas ───────────────────────────────────────────
+   Achicamos la imagen para que pese poco. En modo de prueba se
+   guarda como texto en esta PC; con Supabase se sube al bucket
+   privado "recetas" y solo guardamos su ruta. */
+function comprimirImagen(file, maxLado = 1280, calidad = 0.72) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxLado) { h = Math.round(h * maxLado / w); w = maxLado; }
+      else if (h >= w && h > maxLado) { w = Math.round(w * maxLado / h); h = maxLado; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen')); };
+    img.src = url;
+  });
+}
+async function subirReceta(file) {
+  const dataUrl = await comprimirImagen(file);
+  if (!SUPA_ON) return dataUrl;
+  const blob = await (await fetch(dataUrl)).blob();
+  const path = `receta-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const { error } = await supa.storage.from('recetas').upload(path, blob, { contentType: 'image/jpeg' });
+  if (error) throw error;
+  return path;
+}
+async function verReceta(receta) {
+  if (!receta) return;
+  if (receta.startsWith('data:') || receta.startsWith('http')) { window.open(receta, '_blank'); return; }
+  const { data, error } = await supa.storage.from('recetas').createSignedUrl(receta, 3600);
+  if (!error && data) window.open(data.signedUrl, '_blank');
+}
+
 /* ════════════════════════════════════════════════════════════
    Componentes base (sistema de diseño Farmacia Nieto)
    ════════════════════════════════════════════════════════════ */
@@ -379,31 +425,54 @@ function Login({ onOk }) {
 /* ════════════════════════════════════════════════════════════
    Formulario de carga manual
    ════════════════════════════════════════════════════════════ */
-function NuevoPedido({ onCrear, onCerrar }) {
-  const [f, setF] = React.useState({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+function PedidoForm({ inicial, onGuardar, onCerrar }) {
+  const editando = !!(inicial && inicial.id);
+  const [f, setF] = React.useState({
+    nombre: inicial?.nombre || '', telefono: inicial?.telefono || '',
+    especialidad: inicial?.especialidad || '', detalle: inicial?.detalle || '',
+    precio: inicial?.precio ?? '', entrega: inicial?.entrega || '',
+  });
+  const [receta, setReceta] = React.useState(inicial?.receta_img || ''); // valor ya guardado
+  const [preview, setPreview] = React.useState('');                       // foto nueva elegida (dataURL)
+  const [archivo, setArchivo] = React.useState(null);                     // File a subir
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState('');
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  const elegirFoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try { setPreview(await comprimirImagen(file, 480, 0.6)); setArchivo(file); }
+    catch { setErr('No se pudo leer esa imagen.'); }
+  };
+  const quitarFoto = () => { setPreview(''); setArchivo(null); setReceta(''); };
 
   const guardar = async (e) => {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      await onCrear({ ...f, origen: 'manual' });
+      let receta_img = receta;
+      if (archivo) receta_img = await subirReceta(archivo);
+      const datos = {
+        nombre: f.nombre, telefono: f.telefono, especialidad: f.especialidad, detalle: f.detalle,
+        precio: f.precio === '' ? null : Number(f.precio),
+        entrega: f.entrega || null,
+        receta_img: receta_img || null,
+      };
+      await onGuardar(datos, editando ? inicial.id : null);
+      onCerrar();
     } catch (ex) {
       setErr('No se pudo guardar el pedido. Revisá la conexión e intentá de nuevo.');
       setBusy(false);
-      return;
     }
-    setBusy(false);
-    onCerrar();
   };
 
+  const hayFoto = preview || receta;
   return (
     <Card padding="lg" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--green-200)' }}>
       <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 22, color: 'var(--green-900)' }}>Cargar pedido a mano</h3>
+          <h3 style={{ fontSize: 22, color: 'var(--green-900)' }}>{editando ? 'Editar pedido' : 'Cargar pedido a mano'}</h3>
           <Button variant="ghost" size="sm" onClick={onCerrar} iconLeft={<Icon name="X" size={16} />}>Cerrar</Button>
         </div>
         <div className="fp-form-row">
@@ -412,9 +481,32 @@ function NuevoPedido({ onCrear, onCerrar }) {
         </div>
         <Select label="Especialidad" placeholder="Elegí una opción" options={ESPECIALIDADES} value={f.especialidad} onChange={set('especialidad')} />
         <Textarea label="Detalle de la receta / pedido" value={f.detalle} onChange={set('detalle')} placeholder="Fórmula, dosis, indicaciones…" />
+        <div className="fp-form-row">
+          <Input label="Monto del preparado ($)" type="number" min="0" step="any" value={f.precio} onChange={set('precio')} placeholder="Ej: 12500" />
+          <Input label="Entrega aproximada (opcional)" type="date" value={f.entrega} onChange={set('entrega')} />
+        </div>
+        <div className="fn-field">
+          <span className="fn-field__label">Foto de la receta <span style={{ fontWeight: 500, color: 'var(--ink-400)' }}>(opcional)</span></span>
+          {hayFoto ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {preview
+                ? <img src={preview} alt="receta" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)' }} />
+                : <span style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)' }}><Icon name="FileText" size={26} color="var(--green-600)" /></span>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {!preview && receta && <Button variant="outline" size="sm" onClick={() => verReceta(receta)} iconLeft={<Icon name="Eye" size={15} />}>Ver</Button>}
+                <Button variant="ghost" size="sm" onClick={quitarFoto} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>
+              </div>
+            </div>
+          ) : (
+            <label className="fn-btn fn-btn--outline fn-btn--md" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
+              <Icon name="Camera" size={16} /> <span>Subir / sacar foto</span>
+              <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
+            </label>
+          )}
+        </div>
         {err && <Alert variant="danger">{err}</Alert>}
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button type="submit" disabled={busy} iconLeft={<Icon name="Plus" size={16} />}>{busy ? 'Guardando…' : 'Guardar pedido'}</Button>
+          <Button type="submit" disabled={busy} iconLeft={<Icon name={editando ? 'Save' : 'Plus'} size={16} />}>{busy ? 'Guardando…' : (editando ? 'Guardar cambios' : 'Guardar pedido')}</Button>
           <Button variant="outline" onClick={onCerrar}>Cancelar</Button>
         </div>
       </form>
@@ -432,7 +524,8 @@ function fechaCorta(iso) {
          d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function PedidoRow({ p, onEstado }) {
+function PedidoRow({ p, onEstado, onEditar }) {
+  const tieneMeta = (p.precio || p.precio === 0) || p.entrega || p.receta_img;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
   return (
@@ -451,13 +544,30 @@ function PedidoRow({ p, onEstado }) {
             <Badge variant={p.origen === 'web' ? 'info' : 'gold'}>{p.origen === 'web' ? 'Desde la web' : 'Carga manual'}</Badge>
           </div>
           {p.detalle && <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.detalle}</div>}
+          {tieneMeta && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              {(p.precio || p.precio === 0) && <Badge variant="gold">{formatMonto(p.precio)}</Badge>}
+              {p.entrega && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--ink-500)', fontWeight: 600 }}>
+                  <Icon name="Calendar" size={13} color="var(--ink-400)" /> Entrega ~ {formatEntrega(p.entrega)}
+                </span>
+              )}
+              {p.receta_img && (
+                <button onClick={() => verReceta(p.receta_img)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: 'var(--green-700)', background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 'var(--radius-pill)', padding: '3px 10px', cursor: 'pointer' }}>
+                  <Icon name="Paperclip" size={13} color="var(--green-700)" /> Ver receta
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flex: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 12, color: 'var(--ink-400)', fontWeight: 600 }}>{fechaCorta(p.creado)}</span>
             <Badge variant={est.badge} dot>{est.label}</Badge>
           </div>
-          <div style={{ display: 'flex', gap: 7 }}>
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Button size="sm" variant="ghost" iconLeft={<Icon name="Pencil" size={14} />} onClick={() => onEditar(p)}>Editar</Button>
             {acciones.map(([destino, label, icono]) => (
               <Button key={destino} size="sm"
                 variant={destino === 'cancelado' ? 'danger' : destino === 'entregado' || destino === 'listo' ? 'primary' : 'outline'}
@@ -491,7 +601,7 @@ function Panel({ session, onSalir }) {
   const [busca, setBusca] = React.useState('');
   const [cargando, setCargando] = React.useState(true);
   const [errCarga, setErrCarga] = React.useState('');
-  const [mostrarForm, setMostrarForm] = React.useState(false);
+  const [form, setForm] = React.useState(null); // null = cerrado · {} = nuevo · pedido = editar
 
   const refrescar = React.useCallback(async () => {
     try {
@@ -509,7 +619,11 @@ function Panel({ session, onSalir }) {
     return () => clearInterval(t);
   }, [refrescar]);
 
-  const crear = async (p) => { await api.crear(p); await refrescar(); };
+  const guardar = async (datos, id) => {
+    if (id) await api.actualizar(id, datos);
+    else await api.crear({ ...datos, origen: 'manual', estado: 'nuevo' });
+    await refrescar();
+  };
   const cambiarEstado = async (id, estado) => {
     setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
     try { await api.actualizar(id, { estado }); } catch (e) { refrescar(); }
@@ -525,6 +639,7 @@ function Panel({ session, onSalir }) {
     return true;
   });
 
+  const totalMostrado = visibles.reduce((s, p) => s + (Number(p.precio) || 0), 0);
   const hoy = new Date().toDateString();
   const stats = [
     ['Nuevos', counts.nuevo || 0, 'Inbox', 'var(--gold-600)'],
@@ -589,11 +704,18 @@ function Panel({ session, onSalir }) {
               <input className="fn-input fp-search" style={{ padding: '.55rem .95rem .55rem 2.4rem', fontSize: 14 }}
                 placeholder="Buscar nombre, teléfono…" value={busca} onChange={(e) => setBusca(e.target.value)} />
             </div>
-            <Button variant="accent" onClick={() => setMostrarForm(true)} iconLeft={<Icon name="Plus" size={17} />}>Cargar pedido</Button>
+            <Button variant="accent" onClick={() => setForm({})} iconLeft={<Icon name="Plus" size={17} />}>Cargar pedido</Button>
           </div>
         </div>
 
-        {mostrarForm && <NuevoPedido onCrear={crear} onCerrar={() => setMostrarForm(false)} />}
+        {form && <PedidoForm inicial={form} onGuardar={guardar} onCerrar={() => setForm(null)} />}
+
+        {!cargando && visibles.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--ink-500)', fontWeight: 600, padding: '0 4px' }}>
+            <span>{visibles.length} {visibles.length === 1 ? 'pedido' : 'pedidos'}</span>
+            {totalMostrado > 0 && <span>Total: <span style={{ color: 'var(--green-800)' }}>{formatMonto(totalMostrado)}</span></span>}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {cargando && <p style={{ textAlign: 'center', color: 'var(--ink-400)' }}>Cargando pedidos…</p>}
@@ -614,7 +736,7 @@ function Panel({ session, onSalir }) {
               </div>
             </Card>
           )}
-          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} />)}
+          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} onEditar={setForm} />)}
         </div>
       </main>
     </div>

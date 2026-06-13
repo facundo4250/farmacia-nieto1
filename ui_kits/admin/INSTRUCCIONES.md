@@ -4,6 +4,8 @@ Esta guía te lleva de cero a tener:
 
 - La **página web** con el formulario "Pedí tu fórmula" enviando pedidos reales.
 - El **panel de pedidos** (`ui_kits/admin/index.html`) en tu PC con Windows 11, donde ves los pedidos que llegan de la web, les cambiás el estado (Nuevo → En preparación → Listo → Entregado) y también **cargás pedidos a mano**.
+- En cada pedido podés agregar el **monto del preparado**, una **fecha aproximada de entrega** (opcional) y una **foto de la receta** (subir un archivo o sacar la foto con la cámara). El panel muestra el **total** de los pedidos que estás viendo.
+- Como todo se guarda en la nube, el panel se puede abrir en **varias computadoras de la farmacia a la vez** y todas ven los mismos pedidos (se actualiza solo cada 30 segundos, o con el botón "Actualizar").
 
 No hace falta instalar ningún programa: el panel se abre con el navegador (Edge o Chrome) que ya viene con Windows 11. Podés crear un acceso directo en el escritorio para abrirlo como si fuera un programa más.
 
@@ -46,7 +48,10 @@ create table pedidos (
   especialidad text,
   detalle text,
   estado text not null default 'nuevo',
-  origen text not null default 'web'
+  origen text not null default 'web',
+  precio numeric,          -- monto del preparado (lo carga la empleada)
+  entrega date,            -- fecha aproximada de entrega (opcional)
+  receta_img text          -- foto de la receta (ruta en el Storage)
 );
 
 alter table pedidos enable row level security;
@@ -66,6 +71,35 @@ create policy "el personal puede cargar a mano"
 ```
 
 Si dice **Success**, listo.
+
+> **¿Ya habías creado la tabla antes (sin precio/entrega/foto)?** No la borres. Pegá y ejecutá solo esto para agregarle las columnas nuevas:
+>
+> ```sql
+> alter table pedidos add column if not exists precio numeric;
+> alter table pedidos add column if not exists entrega date;
+> alter table pedidos add column if not exists receta_img text;
+> ```
+
+### Paso 2b — Carpeta segura para las fotos de las recetas
+
+Las fotos de las recetas se guardan en un espacio aparte (el "Storage" de Supabase), **privado**: solo se ven con una sesión iniciada y mediante un enlace temporal, nunca quedan públicas en internet (son datos sensibles).
+
+En el **SQL Editor**, pegá este bloque y tocá **Run**:
+
+```sql
+-- Carpeta privada para las recetas
+insert into storage.buckets (id, name, public)
+values ('recetas', 'recetas', false)
+on conflict (id) do nothing;
+
+-- Solo el personal con sesión puede subir y ver las recetas
+create policy "personal sube recetas"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'recetas');
+create policy "personal ve recetas"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'recetas');
+```
 
 ### Paso 3 — Crear tu usuario para entrar al panel
 
