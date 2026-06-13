@@ -596,6 +596,11 @@ const INSTAGRAM_POSTS = [
   'https://www.instagram.com/p/DZGFjhsCQvD/',
 ];
 
+// Catálogo de Canva (diseño público). El visor permite pasar páginas y pantalla completa.
+const CATALOGO_BASE = 'https://www.canva.com/design/DAGWvbsAFsM/lCyQWqh-4uzxTLVj6AAosQ/view';
+const CATALOGO_EMBED = CATALOGO_BASE + '?embed';
+const CATALOGO_RATIO = '141.4214%'; // alto/ancho del diseño (A4 vertical por defecto; ajustable si se ve con bandas)
+
 /* ── Botón flotante de WhatsApp ───────────────────────────── */
 function WhatsAppFAB() {
   return (
@@ -612,6 +617,7 @@ function WhatsAppFAB() {
 const NAV = [
   { id: 'inicio', label: 'Inicio' },
   { id: 'especialidades', label: 'Especialidades' },
+  { id: 'catalogo', label: 'Catálogo' },
   { id: 'nosotros', label: 'Nosotros' },
   { id: 'proceso', label: 'Cómo trabajamos' },
   { id: 'ubicacion', label: 'Ubicación' },
@@ -1056,6 +1062,27 @@ function FAQ() {
   );
 }
 
+/* ── Catálogo (Canva) ─────────────────────────────────────── */
+function Catalogo() {
+  return (
+    <section id="catalogo" className="fn-section" style={{ background: 'var(--cream-100)' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <span className="nieto-eyebrow">Nuestros preparados</span>
+          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 10px' }}>Catálogo</h2>
+          <p style={{ fontSize: 16, color: 'var(--ink-500)', margin: 0 }}>Mirá nuestro catálogo de preparados magistrales. Podés pasar las páginas y verlo en pantalla completa.</p>
+        </div>
+        <div style={{ position: 'relative', width: '100%', height: 0, paddingTop: CATALOGO_RATIO, borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-md)', border: '1px solid var(--line-200)', background: 'var(--cream-50)' }}>
+          <iframe title="Catálogo Farmacia Nieto" src={CATALOGO_EMBED} loading="lazy" allowFullScreen style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }} />
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Button href={CATALOGO_BASE} target="_blank" rel="noopener noreferrer" variant="outline" size="lg" iconRight={<Icon name="ExternalLink" size={17} />}>Abrir el catálogo completo</Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── Instagram (publicaciones, sin autorizar) ─────────────── */
 function InstagramFeed() {
   React.useEffect(() => {
@@ -1145,6 +1172,7 @@ function NietoSite() {
       <main>
         <Hero onCta={goCta} onNav={scrollTo} />
         <Specialties onCta={goCta} />
+        <Catalogo />
         <About />
         <Process />
         <InstagramFeed />
