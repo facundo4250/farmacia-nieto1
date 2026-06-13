@@ -255,23 +255,24 @@ const fechaDia = (iso) => iso ? new Date(iso).toLocaleDateString('es-AR', { day:
 const normTel = (t) => (t || '').replace(/\D/g, '');
 const claveCliente = (p) => normTel(p.telefono) || ('n:' + (p.nombre || '').trim().toLowerCase());
 
-/* ── Cuenta de cobro (precio, seña, descuentos por efectivo) ──
-   El precio base no cambia. El descuento (0–20%) se aplica solo
-   a la parte que se paga en EFECTIVO (seña y/o saldo). */
+/* ── Cuenta de cobro (precio, seña, descuento por efectivo) ──
+   El precio base no cambia. Hay UN solo % de descuento (0–20%)
+   que se aplica a TODO lo que se pague en EFECTIVO (seña y/o saldo).
+   El descuento se guarda en la columna sena_desc. */
 function calcCobro(p) {
   const precioN = (p.precio === '' || p.precio == null) ? null : Number(p.precio);
   const senaN = (p.sena === '' || p.sena == null) ? 0 : Number(p.sena);
+  const desc = Math.min(20, Math.max(0, Number(p.sena_desc) || 0)); // % único
   const senaEf = p.pago_metodo === 'Efectivo';
-  const senaDesc = senaEf ? Math.min(20, Math.max(0, Number(p.sena_desc) || 0)) : 0;
-  const senaCobrado = senaEf ? Math.round(senaN * (1 - senaDesc / 100)) : senaN;
+  const senaCobrado = senaEf ? Math.round(senaN * (1 - desc / 100)) : senaN;
   const saldoMonto = precioN == null ? null : Math.max(0, precioN - senaN);
   const pagoTodo = precioN != null && precioN > 0 && senaN >= precioN;
   const restoEf = p.pago_resto_metodo === 'Efectivo';
-  const restoDesc = restoEf ? Math.min(20, Math.max(0, Number(p.resto_desc) || 0)) : 0;
-  const saldoCobrado = saldoMonto == null ? null : (restoEf ? Math.round(saldoMonto * (1 - restoDesc / 100)) : saldoMonto);
+  const saldoCobrado = saldoMonto == null ? null : (restoEf ? Math.round(saldoMonto * (1 - desc / 100)) : saldoMonto);
+  const saldoConDesc = saldoMonto == null ? null : Math.round(saldoMonto * (1 - desc / 100)); // potencial si paga en efectivo
   const totalCobrado = precioN == null ? null : (senaCobrado + (saldoCobrado || 0));
   const ahorro = precioN == null ? 0 : Math.max(0, precioN - totalCobrado);
-  return { precioN, senaN, senaEf, senaDesc, senaCobrado, saldoMonto, pagoTodo, restoEf, restoDesc, saldoCobrado, totalCobrado, ahorro };
+  return { precioN, senaN, desc, senaEf, senaCobrado, saldoMonto, saldoConDesc, pagoTodo, restoEf, saldoCobrado, totalCobrado, ahorro };
 }
 
 /* ── Fotos de recetas ───────────────────────────────────────────
@@ -512,8 +513,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
         sena: f.sena === '' ? null : Number(f.sena),
         pago_metodo: f.pago_metodo || null,
         pago_resto_metodo: f.pago_resto_metodo || null,
-        sena_desc: (f.pago_metodo === 'Efectivo' && f.sena_desc !== '' && f.sena_desc != null) ? Number(f.sena_desc) : null,
-        resto_desc: (f.pago_resto_metodo === 'Efectivo' && f.resto_desc !== '' && f.resto_desc != null) ? Number(f.resto_desc) : null,
+        sena_desc: (f.sena_desc !== '' && f.sena_desc != null) ? Number(f.sena_desc) : null,
+        resto_desc: null,
         notas_prep: f.notas_prep || null,
       };
       await onGuardar(datos, editando ? inicial.id : null);
@@ -572,29 +573,21 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
           <Input label="Seña ($)" type="number" min="0" step="any" value={f.sena} onChange={set('sena')} placeholder="Ej: 5000" />
         </div>
         <Select label="Forma de pago de la seña" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_metodo} onChange={set('pago_metodo')} />
-        {cb.senaEf && cb.senaN > 0 && (
+        {mostrarSaldoPago && !pagoTodo && saldoMonto > 0 && (
+          <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
+        )}
+        {(cb.senaEf || (mostrarSaldoPago && cb.restoEf)) && (
           <div className="fn-field">
-            <span className="fn-field__label">Descuento por efectivo en la seña: <b>{cb.senaDesc}%</b></span>
+            <span className="fn-field__label">Descuento por pago en efectivo: <b>{cb.desc}%</b> <span style={{ fontWeight: 500, color: 'var(--ink-400)' }}>(se aplica a lo que se paga en efectivo)</span></span>
             <input type="range" min="0" max="20" step="1" value={f.sena_desc || 0} onChange={set('sena_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
           </div>
         )}
         {precioN != null && !pagoTodo && saldoMonto > 0 && (
-          <>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
-              Falta al retirar: {formatMonto(saldoMonto)}{!mostrarSaldoPago && <span style={{ fontWeight: 500, color: 'var(--ink-500)' }}> · se cobra cuando el pedido esté listo</span>}
-            </div>
-            {mostrarSaldoPago && (
-              <>
-                <Select label="Forma de pago del saldo (al retirar)" placeholder="Elegí una opción" options={['Efectivo', 'Tarjeta/Transferencia']} value={f.pago_resto_metodo} onChange={set('pago_resto_metodo')} />
-                {cb.restoEf && (
-                  <div className="fn-field">
-                    <span className="fn-field__label">Descuento por efectivo en el saldo: <b>{cb.restoDesc}%</b></span>
-                    <input type="range" min="0" max="20" step="1" value={f.resto_desc || 0} onChange={set('resto_desc')} style={{ width: '100%', accentColor: 'var(--green-700)' }} />
-                  </div>
-                )}
-              </>
-            )}
-          </>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wood-700)', background: 'var(--warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+            Falta al retirar: {formatMonto(cb.restoEf ? cb.saldoCobrado : saldoMonto)}
+            {!mostrarSaldoPago && <span style={{ fontWeight: 500, color: 'var(--ink-500)' }}> · se cobra cuando esté listo{cb.desc > 0 ? ` (si paga en efectivo: ${formatMonto(cb.saldoConDesc)})` : ''}</span>}
+            {mostrarSaldoPago && cb.restoEf && cb.desc > 0 && <span style={{ fontWeight: 500, color: 'var(--ink-500)' }}> (con {cb.desc}% por efectivo)</span>}
+          </div>
         )}
         {precioN != null && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: pagoTodo ? 'var(--success-soft)' : 'var(--green-50)', border: '1px solid var(--green-200)' }}>
@@ -682,9 +675,9 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
           {tieneMeta && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
               {precioN != null && <Badge variant="gold">Total {formatMonto(precioN)}</Badge>}
-              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaDesc > 0 ? ` (-${cb.senaDesc}%)` : ''}</Badge>}
-              {pagoTodo ? <Badge variant="success">Pago todo</Badge> : (precioN != null && saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(saldoMonto)}</Badge>)}
-              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoDesc > 0 ? ` (-${cb.restoDesc}%)` : ''}</Badge>}
+              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaEf && cb.desc > 0 ? ` (-${cb.desc}%)` : ''}</Badge>}
+              {pagoTodo ? <Badge variant="success">Pago todo</Badge> : (precioN != null && saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(cb.restoEf ? cb.saldoCobrado : saldoMonto)}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoEf && cb.desc > 0 ? ` (-${cb.desc}%)` : ''}</Badge>}
               {cb.ahorro > 0 && <Badge variant="success">Cobrado {formatMonto(cb.totalCobrado)} · ahorro {formatMonto(cb.ahorro)}</Badge>}
               {p.entrega && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--ink-500)', fontWeight: 600 }}>
@@ -881,9 +874,9 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 6 }}>
               {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
               {cb.precioN != null && <Badge variant="gold">Total {formatMonto(cb.precioN)}</Badge>}
-              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(cb.senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaDesc > 0 ? ` (-${cb.senaDesc}%)` : ''}</Badge>}
-              {cb.pagoTodo ? <Badge variant="success">Pago todo</Badge> : (cb.precioN != null && cb.saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(cb.saldoMonto)}</Badge>)}
-              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoDesc > 0 ? ` (-${cb.restoDesc}%)` : ''}</Badge>}
+              {(p.sena || p.sena === 0) && <Badge variant="neutral">Seña {formatMonto(cb.senaN)}{p.pago_metodo ? ' · ' + p.pago_metodo : ''}{cb.senaEf && cb.desc > 0 ? ` (-${cb.desc}%)` : ''}</Badge>}
+              {cb.pagoTodo ? <Badge variant="success">Pago todo</Badge> : (cb.precioN != null && cb.saldoMonto > 0 && <Badge variant="warning">Falta {formatMonto(cb.restoEf ? cb.saldoCobrado : cb.saldoMonto)}</Badge>)}
+              {p.pago_resto_metodo && <Badge variant="info">Saldo · {p.pago_resto_metodo}{cb.restoEf && cb.desc > 0 ? ` (-${cb.desc}%)` : ''}</Badge>}
               {cb.ahorro > 0 && <Badge variant="success">Cobrado {formatMonto(cb.totalCobrado)} · ahorro {formatMonto(cb.ahorro)}</Badge>}
               {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
             </div>
