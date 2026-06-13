@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia Nieto — Panel de pedidos</title>
+<link rel="icon" href="../../project/assets/emblem-nieto.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Quicksand:wght@400;500;600;700&family=Sacramento&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../config.js"></script>
+<style>
+/* ── Tokens (Farmacia Nieto design system) ────────────────── */
+:root {
+  --green-950:#143420; --green-900:#1e4d2b; --green-800:#225b30; --green-700:#2f6b3c;
+  --green-600:#4e7a45; --green-500:#6f8f6c; --green-400:#8aa985; --green-300:#9bc3ae;
+  --green-200:#c3dccb; --green-100:#e3efe4; --green-50:#eff5ec;
+  --mint-200:#cfe8e6; --mint-100:#e1f2f1; --mint-50:#eef8f7;
+  --cream-300:#f3e6c9; --cream-200:#f8ecd4; --cream-100:#fbf5e9; --cream-50:#fefcf6;
+  --gold-700:#b8881f; --gold-600:#d4a32c; --gold-500:#ddb438; --gold-400:#f2c94c;
+  --gold-300:#f8dd86; --gold-100:#fbf0cf;
+  --wood-700:#6f551a; --wood-500:#a06a3c; --wood-300:#c89b6f; --wood-100:#ecdcc6;
+  --ink-900:#20291f; --ink-700:#2f3b2c; --ink-600:#3c4a3a; --ink-500:#5a6857;
+  --ink-400:#7d8a79; --ink-300:#a7b0a1;
+  --line-300:#d3dccb; --line-200:#e4e7d9; --line-100:#efeede; --white:#ffffff;
+  --success:#4e7a45; --success-soft:#e3efe4; --warning:#d4a32c; --warning-soft:#fbf0cf;
+  --danger:#b4503e; --danger-soft:#f6e2dc; --info:#4a7d86; --info-soft:#e1f2f1;
+  --bg-page:var(--cream-100); --surface-card:var(--cream-50);
+  --brand-primary:var(--green-900); --brand-primary-hover:var(--green-800);
+  --ring:color-mix(in oklab, var(--green-600) 55%, transparent);
+  --font-script:'Sacramento','Segoe Script',cursive;
+  --font-serif:'Cormorant Garamond','Hoefler Text',Georgia,serif;
+  --font-sans:'Quicksand',ui-rounded,'Segoe UI',system-ui,sans-serif;
+  --text-2xs:0.6875rem; --text-xs:0.75rem; --text-sm:0.875rem; --text-base:1rem;
+  --text-md:1.125rem; --text-lg:1.375rem; --text-xl:1.75rem; --text-2xl:2.25rem;
+  --tracking-caps:0.18em;
+  --radius-xs:4px; --radius-sm:8px; --radius-md:12px; --radius-lg:18px;
+  --radius-xl:26px; --radius-2xl:36px; --radius-pill:999px;
+  --border-hairline:1px; --border-thin:1.5px;
+  --shadow-xs:0 1px 2px rgba(30,77,43,.06);
+  --shadow-sm:0 2px 6px rgba(30,77,43,.07),0 1px 2px rgba(30,77,43,.05);
+  --shadow-md:0 6px 18px rgba(30,77,43,.09),0 2px 6px rgba(30,77,43,.05);
+  --shadow-lg:0 16px 40px rgba(30,77,43,.12),0 4px 12px rgba(30,77,43,.06);
+  --shadow-xl:0 28px 64px rgba(20,52,32,.16),0 8px 20px rgba(20,52,32,.08);
+  --shadow-gold:0 8px 22px rgba(221,180,56,.28);
+  --ease-out:cubic-bezier(.22,1,.36,1); --ease-soft:cubic-bezier(.4,0,.2,1);
+  --dur-fast:140ms; --dur-base:220ms;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; background:var(--bg-page); color:var(--ink-600);
+  font-family:var(--font-sans); font-size:var(--text-base); line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{ font-family:var(--font-serif); font-weight:600; color:var(--ink-900); margin:0; }
+img{ max-width:100%; display:block; }
+button{ font-family:inherit; }
+::selection{ background:color-mix(in oklab, var(--gold-400) 55%, transparent); color:var(--ink-900); }
+.nieto-eyebrow{ font-family:var(--font-sans); font-weight:600; font-size:var(--text-xs); letter-spacing:var(--tracking-caps); text-transform:uppercase; color:var(--green-600); }
+
+/* ── Button ── */
+.fn-btn{ --_bg:var(--brand-primary); --_fg:var(--cream-50); --_bd:transparent;
+  font-family:var(--font-sans); font-weight:600; display:inline-flex; align-items:center; justify-content:center;
+  gap:.55em; border:var(--border-thin) solid var(--_bd); background:var(--_bg); color:var(--_fg);
+  border-radius:var(--radius-pill); cursor:pointer; text-decoration:none; white-space:nowrap; line-height:1;
+  transition:transform var(--dur-fast) var(--ease-out), background var(--dur-base) var(--ease-soft), box-shadow var(--dur-base) var(--ease-soft), border-color var(--dur-base) var(--ease-soft); }
+.fn-btn:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--ring); }
+.fn-btn:active{ transform:translateY(1px) scale(.985); }
+.fn-btn[disabled]{ opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.fn-btn--sm{ font-size:var(--text-sm); padding:.5rem .95rem; }
+.fn-btn--md{ font-size:var(--text-base); padding:.7rem 1.35rem; }
+.fn-btn--lg{ font-size:var(--text-md); padding:.9rem 1.8rem; }
+.fn-btn--block{ display:flex; width:100%; }
+.fn-btn--primary{ box-shadow:var(--shadow-sm); }
+.fn-btn--primary:hover{ --_bg:var(--brand-primary-hover); box-shadow:var(--shadow-md); }
+.fn-btn--accent{ --_bg:var(--gold-500); --_fg:var(--wood-700); box-shadow:var(--shadow-xs); }
+.fn-btn--accent:hover{ --_bg:var(--gold-400); box-shadow:var(--shadow-gold); }
+.fn-btn--outline{ --_bg:transparent; --_fg:var(--green-900); --_bd:var(--green-300); }
+.fn-btn--outline:hover{ --_bg:var(--green-50); --_bd:var(--green-500); }
+.fn-btn--ghost{ --_bg:transparent; --_fg:var(--green-800); }
+.fn-btn--ghost:hover{ --_bg:var(--green-100); }
+.fn-btn--danger{ --_bg:transparent; --_fg:var(--danger); --_bd:color-mix(in oklab, var(--danger) 40%, transparent); }
+.fn-btn--danger:hover{ --_bg:var(--danger-soft); }
+
+/* ── Card ── */
+.fn-card{ background:var(--surface-card); border-radius:var(--radius-lg);
+  border:var(--border-hairline) solid var(--line-200); box-shadow:var(--shadow-sm);
+  overflow:hidden; display:flex; flex-direction:column;
+  transition:box-shadow var(--dur-base) var(--ease-soft), border-color var(--dur-base); }
+.fn-card__body{ padding:20px; display:flex; flex-direction:column; gap:8px; }
+.fn-card__body--lg{ padding:28px; }
+
+/* ── Badge ── */
+.fn-badge{ display:inline-flex; align-items:center; gap:5px; font-weight:600; font-size:var(--text-xs);
+  line-height:1; padding:.32em .7em; border-radius:var(--radius-pill); white-space:nowrap; }
+.fn-badge__dot{ width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.85; }
+.fn-badge--neutral{ background:var(--green-100); color:var(--green-800); }
+.fn-badge--success{ background:var(--success-soft); color:var(--green-800); }
+.fn-badge--warning{ background:var(--warning-soft); color:var(--gold-700); }
+.fn-badge--danger{ background:var(--danger-soft); color:var(--danger); }
+.fn-badge--info{ background:var(--info-soft); color:var(--info); }
+.fn-badge--gold{ background:var(--gold-100); color:var(--wood-700); }
+.fn-badge--solid{ background:var(--brand-primary); color:var(--cream-50); }
+
+/* ── Alert ── */
+.fn-alert{ display:flex; gap:13px; align-items:flex-start; border-radius:var(--radius-lg);
+  padding:15px 17px; border:var(--border-thin) solid transparent; background:var(--green-50); }
+.fn-alert__icon{ flex:none; display:flex; margin-top:1px; }
+.fn-alert__icon svg{ width:20px; height:20px; }
+.fn-alert__title{ font-weight:700; font-size:var(--text-sm); color:var(--ink-900); margin:0 0 3px; }
+.fn-alert__text{ font-size:var(--text-sm); line-height:1.55; color:var(--ink-600); margin:0; }
+.fn-alert--info{ background:var(--info-soft); border-color:color-mix(in oklab, var(--info) 22%, transparent); }
+.fn-alert--info .fn-alert__icon{ color:var(--info); }
+.fn-alert--success{ background:var(--success-soft); border-color:color-mix(in oklab, var(--success) 28%, transparent); }
+.fn-alert--success .fn-alert__icon{ color:var(--green-600); }
+.fn-alert--warning{ background:var(--warning-soft); border-color:color-mix(in oklab, var(--warning) 30%, transparent); }
+.fn-alert--warning .fn-alert__icon{ color:var(--gold-700); }
+.fn-alert--danger{ background:var(--danger-soft); border-color:color-mix(in oklab, var(--danger) 28%, transparent); }
+.fn-alert--danger .fn-alert__icon{ color:var(--danger); }
+
+/* ── Fields ── */
+.fn-field{ display:flex; flex-direction:column; gap:6px; }
+.fn-field__label{ font-size:var(--text-sm); font-weight:600; color:var(--green-900); }
+.fn-field__req{ color:var(--gold-700); margin-left:2px; }
+.fn-input{ width:100%; font-family:var(--font-sans); font-size:var(--text-base);
+  color:var(--ink-700); background:var(--cream-50); border:var(--border-thin) solid var(--line-300);
+  border-radius:var(--radius-md); padding:.7rem .95rem;
+  transition:border-color var(--dur-base) var(--ease-soft), box-shadow var(--dur-base) var(--ease-soft), background var(--dur-base); }
+.fn-input::placeholder{ color:var(--ink-300); }
+.fn-input:hover{ border-color:var(--green-300); }
+.fn-input:focus{ outline:none; border-color:var(--green-500); box-shadow:0 0 0 3px var(--ring); background:var(--white); }
+.fn-select-wrap{ position:relative; }
+.fn-select{ appearance:none; -webkit-appearance:none; padding-right:2.6rem; cursor:pointer; }
+.fn-select-wrap::after{ content:""; position:absolute; right:16px; top:50%; width:9px; height:9px;
+  border-right:2px solid var(--green-600); border-bottom:2px solid var(--green-600);
+  transform:translateY(-65%) rotate(45deg); pointer-events:none; border-radius:1px; }
+.fn-textarea{ resize:vertical; min-height:88px; line-height:1.6; }
+
+/* ── Panel-specific ── */
+.fp-tab{ font-weight:600; font-size:var(--text-sm); padding:8px 15px; border-radius:var(--radius-pill);
+  border:var(--border-thin) solid transparent; background:transparent; color:var(--ink-500); cursor:pointer;
+  transition:all var(--dur-fast) var(--ease-soft); display:inline-flex; align-items:center; gap:7px; }
+.fp-tab:hover{ background:var(--green-50); color:var(--green-900); }
+.fp-tab--active{ background:var(--green-900); color:var(--cream-50); }
+.fp-tab__count{ font-size:var(--text-2xs); background:rgba(0,0,0,.12); border-radius:var(--radius-pill); padding:2px 7px; }
+.fp-tab--active .fp-tab__count{ background:rgba(255,255,255,.18); }
+.fp-row{ transition:box-shadow var(--dur-base) var(--ease-soft); }
+.fp-row:hover{ box-shadow:var(--shadow-md); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+/* ════════════════════════════════════════════════════════════
+   Capa de datos — Supabase si está configurado, si no
+   "modo de prueba" guardando en localStorage de esta PC.
+   ════════════════════════════════════════════════════════════ */
+const CFG = window.FN_CONFIG || {};
+const SUPA_ON = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && !CFG.SUPABASE_URL.includes('TU-PROYECTO'));
+const supa = SUPA_ON ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
+
+const LS_KEY = 'fn_pedidos';
+const lsRead = () => JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+const lsWrite = (arr) => localStorage.setItem(LS_KEY, JSON.stringify(arr));
+
+const api = {
+  async listar() {
+    if (!SUPA_ON) return lsRead();
+    const { data, error } = await supa.from('pedidos').select('*').order('creado', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+  async crear(p) {
+    if (!SUPA_ON) {
+      const arr = lsRead();
+      arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', ...p });
+      lsWrite(arr);
+      return;
+    }
+    const { error } = await supa.from('pedidos').insert(p);
+    if (error) throw error;
+  },
+  async actualizar(id, campos) {
+    if (!SUPA_ON) {
+      lsWrite(lsRead().map((p) => (p.id === id ? { ...p, ...campos } : p)));
+      return;
+    }
+    const { error } = await supa.from('pedidos').update(campos).eq('id', id);
+    if (error) throw error;
+  },
+};
+
+/* ── Estados del pedido ─────────────────────────────────────── */
+const ESTADOS = {
+  nuevo:          { label: 'Nuevo',           badge: 'gold' },
+  en_preparacion: { label: 'En preparación',  badge: 'info' },
+  listo:          { label: 'Listo p/ retirar', badge: 'success' },
+  entregado:      { label: 'Entregado',       badge: 'neutral' },
+  cancelado:      { label: 'Cancelado',       badge: 'danger' },
+};
+const FLUJO = {
+  nuevo:          [['en_preparacion', 'Preparar', 'FlaskConical'], ['cancelado', 'Cancelar', null]],
+  en_preparacion: [['listo', 'Marcar listo', 'PackageCheck'], ['cancelado', 'Cancelar', null]],
+  listo:          [['entregado', 'Entregado', 'Check'], ['en_preparacion', 'Volver a prep.', null]],
+  entregado:      [['nuevo', 'Reabrir', null]],
+  cancelado:      [['nuevo', 'Reabrir', null]],
+};
+const ESPECIALIDADES = [
+  'Medicina Ortomolecular', 'Dermocosmética', 'Homeopatía', 'Alopatía',
+  'Fitoterapia', 'Florales', 'Probióticos', 'Hormonas Bioidénticas', 'Otro',
+];
+
+/* ════════════════════════════════════════════════════════════
+   Componentes base (sistema de diseño Farmacia Nieto)
+   ════════════════════════════════════════════════════════════ */
+function Icon({ name, size = 22, stroke = 1.8, color }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const lib = window.lucide;
+    if (ref.current && lib && lib.icons && lib.icons[name]) {
+      const el = lib.createElement(lib.icons[name]);
+      el.setAttribute('width', size); el.setAttribute('height', size);
+      el.setAttribute('stroke-width', stroke);
+      if (color) el.setAttribute('stroke', color);
+      ref.current.innerHTML = '';
+      ref.current.appendChild(el);
+    }
+  });
+  return <span ref={ref} style={{ display: 'inline-flex', lineHeight: 0 }} />;
+}
+
+function Button({ variant = 'primary', size = 'md', fullWidth, disabled, type = 'button', iconLeft, iconRight, children, ...rest }) {
+  const cls = ['fn-btn', `fn-btn--${variant}`, `fn-btn--${size}`, fullWidth ? 'fn-btn--block' : ''].filter(Boolean).join(' ');
+  return <button className={cls} type={type} disabled={disabled} {...rest}>{iconLeft}{children && <span>{children}</span>}{iconRight}</button>;
+}
+
+function Card({ padding = 'md', className = '', style, children }) {
+  return (
+    <div className={['fn-card', className].filter(Boolean).join(' ')} style={style}>
+      <div className={['fn-card__body', padding === 'lg' ? 'fn-card__body--lg' : ''].filter(Boolean).join(' ')}>{children}</div>
+    </div>
+  );
+}
+
+function Badge({ variant = 'neutral', dot, children }) {
+  return <span className={`fn-badge fn-badge--${variant}`}>{dot && <span className="fn-badge__dot" />}{children}</span>;
+}
+
+const ALERT_ICONS = {
+  info: <path d="M12 16v-5M12 8h.01M12 21a9 9 0 100-18 9 9 0 000 18z" />,
+  success: <path d="M9 12.5l2 2 4-4.5M12 21a9 9 0 100-18 9 9 0 000 18z" />,
+  warning: <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0z" />,
+  danger: <path d="M12 8v4M12 16h.01M12 21a9 9 0 100-18 9 9 0 000 18z" />,
+};
+function Alert({ variant = 'info', title, children }) {
+  return (
+    <div className={`fn-alert fn-alert--${variant}`} role="status">
+      <span className="fn-alert__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{ALERT_ICONS[variant]}</svg>
+      </span>
+      <div>
+        {title && <p className="fn-alert__title">{title}</p>}
+        {children && <p className="fn-alert__text">{children}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Input({ label, required, id, ...rest }) {
+  const fid = id || (label ? 'fp-' + label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="fn-field">
+      {label && <label className="fn-field__label" htmlFor={fid}>{label}{required && <span className="fn-field__req">*</span>}</label>}
+      <input id={fid} className="fn-input" required={required} {...rest} />
+    </div>
+  );
+}
+
+function Select({ label, placeholder, options = [], id, ...rest }) {
+  const fid = id || (label ? 'fp-' + label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="fn-field">
+      {label && <label className="fn-field__label" htmlFor={fid}>{label}</label>}
+      <div className="fn-select-wrap">
+        <select id={fid} className="fn-input fn-select" {...rest}>
+          {placeholder && <option value="">{placeholder}</option>}
+          {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function Textarea({ label, id, rows = 3, ...rest }) {
+  const fid = id || (label ? 'fp-' + label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  return (
+    <div className="fn-field">
+      {label && <label className="fn-field__label" htmlFor={fid}>{label}</label>}
+      <textarea id={fid} rows={rows} className="fn-input fn-textarea" {...rest} />
+    </div>
+  );
+}
+
+const ASSETS = '../../project/assets';
+function Wordmark() {
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0.86 }}>
+      <span style={{ fontFamily: 'var(--font-script)', fontSize: 28, color: 'var(--green-700)' }}>farmacia</span>
+      <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 14, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--green-400)', paddingLeft: 3 }}>Nieto</span>
+    </span>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Pantalla de ingreso (solo cuando Supabase está conectado)
+   ════════════════════════════════════════════════════════════ */
+function Login({ onOk }) {
+  const [email, setEmail] = React.useState('');
+  const [pass, setPass] = React.useState('');
+  const [err, setErr] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  const entrar = async (e) => {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    const { data, error } = await supa.auth.signInWithPassword({ email, password: pass });
+    setBusy(false);
+    if (error) { setErr('Email o contraseña incorrectos. Verificá los datos e intentá de nuevo.'); return; }
+    onOk(data.session);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'radial-gradient(120% 90% at 80% -10%, var(--mint-50), var(--cream-100) 55%)' }}>
+      <Card padding="lg" style={{ width: 400, boxShadow: 'var(--shadow-xl)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <img src={`${ASSETS}/emblem-nieto.png`} alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+          <Wordmark />
+          <span className="nieto-eyebrow" style={{ marginTop: 6 }}>Panel de pedidos</span>
+        </div>
+        <form onSubmit={entrar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Input label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vos@farmacianieto.com" />
+          <Input label="Contraseña" type="password" required value={pass} onChange={(e) => setPass(e.target.value)} placeholder="••••••••" />
+          {err && <Alert variant="danger">{err}</Alert>}
+          <Button type="submit" size="lg" fullWidth disabled={busy} iconRight={<Icon name="LogIn" size={17} />}>
+            {busy ? 'Ingresando…' : 'Ingresar'}
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Formulario de carga manual
+   ════════════════════════════════════════════════════════════ */
+function NuevoPedido({ onCrear, onCerrar }) {
+  const [f, setF] = React.useState({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState('');
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  const guardar = async (e) => {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    try {
+      await onCrear({ ...f, origen: 'manual' });
+    } catch (ex) {
+      setErr('No se pudo guardar el pedido. Revisá la conexión e intentá de nuevo.');
+      setBusy(false);
+      return;
+    }
+    setBusy(false);
+    onCerrar();
+  };
+
+  return (
+    <Card padding="lg" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--green-200)' }}>
+      <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 22, color: 'var(--green-900)' }}>Cargar pedido a mano</h3>
+          <Button variant="ghost" size="sm" onClick={onCerrar} iconLeft={<Icon name="X" size={16} />}>Cerrar</Button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Input label="Nombre y apellido" required value={f.nombre} onChange={set('nombre')} placeholder="Nombre del paciente" />
+          <Input label="Teléfono" required value={f.telefono} onChange={set('telefono')} placeholder="291 …" />
+        </div>
+        <Select label="Especialidad" placeholder="Elegí una opción" options={ESPECIALIDADES} value={f.especialidad} onChange={set('especialidad')} />
+        <Textarea label="Detalle de la receta / pedido" value={f.detalle} onChange={set('detalle')} placeholder="Fórmula, dosis, indicaciones…" />
+        {err && <Alert variant="danger">{err}</Alert>}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button type="submit" disabled={busy} iconLeft={<Icon name="Plus" size={16} />}>{busy ? 'Guardando…' : 'Guardar pedido'}</Button>
+          <Button variant="outline" onClick={onCerrar}>Cancelar</Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Fila de pedido
+   ════════════════════════════════════════════════════════════ */
+function fechaCorta(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) + ' · ' +
+         d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function PedidoRow({ p, onEstado }) {
+  const est = ESTADOS[p.estado] || ESTADOS.nuevo;
+  const acciones = FLUJO[p.estado] || [];
+  return (
+    <div className="fn-card fp-row" style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+      <div style={{ width: 5, flex: 'none', background: p.estado === 'nuevo' ? 'var(--gold-500)' : p.estado === 'en_preparacion' ? 'var(--info)' : p.estado === 'listo' ? 'var(--green-600)' : 'var(--line-300)' }} />
+      <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20, flex: 1, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 190 }}>
+          <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 18, color: 'var(--green-900)', lineHeight: 1.2 }}>{p.nombre}</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-500)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+            <Icon name="Phone" size={13} color="var(--ink-400)" /> {p.telefono}
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
+            {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
+            <Badge variant={p.origen === 'web' ? 'info' : 'gold'}>{p.origen === 'web' ? 'Desde la web' : 'Carga manual'}</Badge>
+          </div>
+          {p.detalle && <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.detalle}</div>}
+        </div>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flex: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 12, color: 'var(--ink-400)', fontWeight: 600 }}>{fechaCorta(p.creado)}</span>
+            <Badge variant={est.badge} dot>{est.label}</Badge>
+          </div>
+          <div style={{ display: 'flex', gap: 7 }}>
+            {acciones.map(([destino, label, icono]) => (
+              <Button key={destino} size="sm"
+                variant={destino === 'cancelado' ? 'danger' : destino === 'entregado' || destino === 'listo' ? 'primary' : 'outline'}
+                iconLeft={icono ? <Icon name={icono} size={14} /> : null}
+                onClick={() => onEstado(p.id, destino)}>
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Panel principal
+   ════════════════════════════════════════════════════════════ */
+const TABS = [
+  ['todos', 'Todos'],
+  ['nuevo', 'Nuevos'],
+  ['en_preparacion', 'En preparación'],
+  ['listo', 'Listos'],
+  ['entregado', 'Entregados'],
+  ['cancelado', 'Cancelados'],
+];
+
+function Panel({ session, onSalir }) {
+  const [pedidos, setPedidos] = React.useState([]);
+  const [tab, setTab] = React.useState('todos');
+  const [busca, setBusca] = React.useState('');
+  const [cargando, setCargando] = React.useState(true);
+  const [errCarga, setErrCarga] = React.useState('');
+  const [mostrarForm, setMostrarForm] = React.useState(false);
+
+  const refrescar = React.useCallback(async () => {
+    try {
+      setErrCarga('');
+      setPedidos(await api.listar());
+    } catch (e) {
+      setErrCarga('No se pudieron cargar los pedidos. Revisá tu conexión a internet.');
+    }
+    setCargando(false);
+  }, []);
+
+  React.useEffect(() => {
+    refrescar();
+    const t = setInterval(refrescar, 30000);
+    return () => clearInterval(t);
+  }, [refrescar]);
+
+  const crear = async (p) => { await api.crear(p); await refrescar(); };
+  const cambiarEstado = async (id, estado) => {
+    setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
+    try { await api.actualizar(id, { estado }); } catch (e) { refrescar(); }
+  };
+
+  const counts = pedidos.reduce((m, p) => { m[p.estado] = (m[p.estado] || 0) + 1; return m; }, {});
+  const visibles = pedidos.filter((p) => {
+    if (tab !== 'todos' && p.estado !== tab) return false;
+    if (busca) {
+      const q = busca.toLowerCase();
+      return [p.nombre, p.telefono, p.especialidad, p.detalle].some((v) => (v || '').toLowerCase().includes(q));
+    }
+    return true;
+  });
+
+  const hoy = new Date().toDateString();
+  const stats = [
+    ['Nuevos', counts.nuevo || 0, 'Inbox', 'var(--gold-600)'],
+    ['En preparación', counts.en_preparacion || 0, 'FlaskConical', 'var(--info)'],
+    ['Listos p/ retirar', counts.listo || 0, 'PackageCheck', 'var(--green-600)'],
+    ['Entregados hoy', pedidos.filter((p) => p.estado === 'entregado' && new Date(p.creado).toDateString() === hoy).length, 'Check', 'var(--ink-400)'],
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'color-mix(in oklab, var(--cream-100) 88%, transparent)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line-200)' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img src={`${ASSETS}/emblem-nieto.png`} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+          <Wordmark />
+          <span className="nieto-eyebrow" style={{ marginLeft: 4, paddingLeft: 16, borderLeft: '1px solid var(--line-300)' }}>Panel de pedidos</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {session && <span style={{ fontSize: 13, color: 'var(--ink-400)', fontWeight: 600 }}>{session.user.email}</span>}
+            <Button variant="ghost" size="sm" onClick={refrescar} iconLeft={<Icon name="RotateCcw" size={15} />}>Actualizar</Button>
+            {session && <Button variant="outline" size="sm" onClick={onSalir} iconLeft={<Icon name="LogOut" size={15} />}>Salir</Button>}
+          </div>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 1160, margin: '0 auto', padding: '28px 28px 64px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {!SUPA_ON && (
+          <Alert variant="warning" title="Modo de prueba — los pedidos se guardan solo en esta computadora">
+            Para que los pedidos de la página web lleguen acá automáticamente y queden guardados en la nube, seguí los pasos de INSTRUCCIONES.md (en esta misma carpeta).
+          </Alert>
+        )}
+        {errCarga && <Alert variant="danger">{errCarga}</Alert>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {stats.map(([label, n, icono, color]) => (
+            <Card key={label}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--green-50)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                  <Icon name={icono} size={21} color={color} stroke={1.7} />
+                </span>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--green-900)' }}>{n}</div>
+                  <div style={{ fontSize: 11.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 600, marginTop: 3 }}>{label}</div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {TABS.map(([id, label]) => (
+              <button key={id} className={['fp-tab', tab === id ? 'fp-tab--active' : ''].join(' ')} onClick={() => setTab(id)}>
+                {label}
+                <span className="fp-tab__count">{id === 'todos' ? pedidos.length : counts[id] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
+                <Icon name="Search" size={16} color="var(--ink-300)" />
+              </span>
+              <input className="fn-input" style={{ paddingLeft: '2.4rem', width: 230, padding: '.55rem .95rem .55rem 2.4rem', fontSize: 14 }}
+                placeholder="Buscar nombre, teléfono…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            </div>
+            <Button variant="accent" onClick={() => setMostrarForm(true)} iconLeft={<Icon name="Plus" size={17} />}>Cargar pedido</Button>
+          </div>
+        </div>
+
+        {mostrarForm && <NuevoPedido onCrear={crear} onCerrar={() => setMostrarForm(false)} />}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {cargando && <p style={{ textAlign: 'center', color: 'var(--ink-400)' }}>Cargando pedidos…</p>}
+          {!cargando && visibles.length === 0 && (
+            <Card padding="lg" style={{ textAlign: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '18px 0' }}>
+                <span style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--green-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="Inbox" size={26} color="var(--green-400)" stroke={1.5} />
+                </span>
+                <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 20, color: 'var(--green-900)' }}>
+                  {busca || tab !== 'todos' ? 'No hay pedidos que coincidan' : 'Todavía no hay pedidos'}
+                </div>
+                <p style={{ fontSize: 14, color: 'var(--ink-500)', margin: 0, maxWidth: 380 }}>
+                  {busca || tab !== 'todos'
+                    ? 'Probá con otra búsqueda u otra pestaña.'
+                    : 'Los pedidos del formulario de la web van a aparecer acá. También podés cargar uno a mano con el botón dorado.'}
+                </p>
+              </div>
+            </Card>
+          )}
+          {visibles.map((p) => <PedidoRow key={p.id} p={p} onEstado={cambiarEstado} />)}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Raíz: login si hay Supabase, directo al panel en modo prueba
+   ════════════════════════════════════════════════════════════ */
+function App() {
+  const [session, setSession] = React.useState(null);
+  const [listo, setListo] = React.useState(!SUPA_ON);
+
+  React.useEffect(() => {
+    if (!SUPA_ON) return;
+    supa.auth.getSession().then(({ data }) => { setSession(data.session); setListo(true); });
+    const { data: sub } = supa.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (!listo) return null;
+  if (SUPA_ON && !session) return <Login onOk={setSession} />;
+  return <Panel session={session} onSalir={() => supa.auth.signOut()} />;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

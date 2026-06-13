@@ -12,6 +12,7 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../config.js"></script>
 <style>
 /* ── Color tokens ─────────────────────────────────────────── */
 :root {
@@ -683,9 +684,53 @@ function Process() {
   );
 }
 
+/* ── Envío de pedidos ─────────────────────────────────────────
+   Con Supabase configurado (ui_kits/config.js) el pedido viaja a
+   la nube y aparece en el panel de pedidos. Sin configurar, se
+   guarda en esta computadora (modo de prueba). */
+const FN_CFG = window.FN_CONFIG || {};
+const SUPA_ON = !!(FN_CFG.SUPABASE_URL && FN_CFG.SUPABASE_ANON_KEY && !FN_CFG.SUPABASE_URL.includes('TU-PROYECTO'));
+
+async function enviarPedido(p) {
+  if (!SUPA_ON) {
+    const arr = JSON.parse(localStorage.getItem('fn_pedidos') || '[]');
+    arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', origen: 'web', ...p });
+    localStorage.setItem('fn_pedidos', JSON.stringify(arr));
+    return;
+  }
+  const r = await fetch(`${FN_CFG.SUPABASE_URL}/rest/v1/pedidos`, {
+    method: 'POST',
+    headers: {
+      apikey: FN_CFG.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${FN_CFG.SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ ...p, origen: 'web' }),
+  });
+  if (!r.ok) throw new Error('No se pudo enviar el pedido');
+}
+
 /* ── Contact ──────────────────────────────────────────────── */
 function Contact({ formState }) {
   const { sent, setSent } = formState;
+  const [campos, setCampos] = React.useState({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+  const [enviando, setEnviando] = React.useState(false);
+  const [errEnvio, setErrEnvio] = React.useState('');
+  const setCampo = (k) => (e) => setCampos({ ...campos, [k]: e.target.value });
+
+  const enviar = async (e) => {
+    e.preventDefault();
+    setEnviando(true); setErrEnvio('');
+    try {
+      await enviarPedido(campos);
+      setCampos({ nombre: '', telefono: '', especialidad: '', detalle: '' });
+      setSent(true);
+    } catch (ex) {
+      setErrEnvio('No pudimos enviar tu consulta. Probá de nuevo o escribinos por WhatsApp al (+54) 291 432-7031.');
+    }
+    setEnviando(false);
+  };
   return (
     <section id="contacto" style={{ background: 'var(--mint-50)', padding: '88px 28px' }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 48, alignItems: 'start' }}>
@@ -716,15 +761,18 @@ function Contact({ formState }) {
               </div>
             </div>
           ) : (
-            <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+            <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 22, color: 'var(--green-900)', margin: 0 }}>Pedí tu fórmula</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required />
-                <Input label="Teléfono" placeholder="291 …" required />
+                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
+                <Input label="Teléfono" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
               </div>
-              <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} />
-              <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" />
-              <Button variant="primary" size="lg" fullWidth type="submit" iconRight={<Icon name="Send" size={17} />}>Enviar consulta</Button>
+              <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
+              <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle')} />
+              {errEnvio && <Alert variant="danger">{errEnvio}</Alert>}
+              <Button variant="primary" size="lg" fullWidth type="submit" disabled={enviando} iconRight={<Icon name="Send" size={17} />}>
+                {enviando ? 'Enviando…' : 'Enviar consulta'}
+              </Button>
             </form>
           )}
         </Card>
