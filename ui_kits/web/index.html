@@ -725,14 +725,6 @@ function Hero({ onCta, onNav }) {
             <Button href={waLink} target="_blank" rel="noopener noreferrer" size="lg" iconLeft={<Icon name="MessageCircle" size={18} color="#fff" />} style={{ background: '#25D366', color: '#fff', borderColor: 'transparent' }}>WhatsApp</Button>
           </div>
           <a href="#especialidades" onClick={(e) => { e.preventDefault(); onNav('especialidades'); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 14, color: 'var(--green-700)' }}>Conocé las especialidades →</a>
-          <div style={{ display: 'flex', gap: 30, marginTop: 40, flexWrap: 'wrap' }}>
-            {[['Especialidades', '8'], ['Atención', 'Personalizada']].map(([k, v]) => (
-              <div key={k}>
-                <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 26, color: 'var(--green-800)' }}>{v}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 600 }}>{k}</div>
-              </div>
-            ))}
-          </div>
         </div>
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: '6% 12%', background: 'var(--green-300)', borderRadius: '46% 54% 58% 42% / 52% 44% 56% 48%', opacity: .35, filter: 'blur(4px)' }} />
