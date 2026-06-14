@@ -11,3 +11,14 @@
   from = "/panel"
   to = "/ui_kits/admin/index.html"
   status = 302
+
+# No cachear el HTML, para que los cambios se vean siempre al instante
+[[headers]]
+  for = "/ui_kits/web/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/ui_kits/admin/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
