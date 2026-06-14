@@ -723,8 +723,8 @@ function Hero({ onCta, onNav }) {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Button variant="primary" size="lg" onClick={onCta} iconRight={<Icon name="ArrowRight" size={18} />}>Pedí tu fórmula</Button>
             <Button href={waLink} target="_blank" rel="noopener noreferrer" size="lg" iconLeft={<Icon name="MessageCircle" size={18} color="#fff" />} style={{ background: '#25D366', color: '#fff', borderColor: 'transparent' }}>WhatsApp</Button>
-            <Button variant="outline" size="lg" onClick={() => onNav('especialidades')}>Conocé las especialidades</Button>
           </div>
+          <a href="#especialidades" onClick={(e) => { e.preventDefault(); onNav('especialidades'); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 14, color: 'var(--green-700)' }}>Conocé las especialidades →</a>
           <div style={{ display: 'flex', gap: 30, marginTop: 40, flexWrap: 'wrap' }}>
             {[['Desde', '1996'], ['Especialidades', '8'], ['Atención', 'Personalizada']].map(([k, v]) => (
               <div key={k}>
@@ -738,7 +738,7 @@ function Hero({ onCta, onNav }) {
           <div style={{ position: 'absolute', inset: '6% 12%', background: 'var(--green-300)', borderRadius: '46% 54% 58% 42% / 52% 44% 56% 48%', opacity: .35, filter: 'blur(4px)' }} />
           <div style={{ position: 'relative', background: 'var(--mint-100)', borderRadius: 'var(--radius-2xl)', padding: 26, boxShadow: 'var(--shadow-xl)' }}>
             <img className="fn-hero-art" src={IMG_LOGO} alt="Farmacia Nieto" style={{ objectFit: 'contain', borderRadius: 'var(--radius-xl)' }} />
-            <div style={{ position: 'absolute', bottom: 16, left: -14, background: 'var(--cream-50)', borderRadius: 'var(--radius-pill)', padding: '9px 16px', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', bottom: -18, left: '50%', transform: 'translateX(-50%)', background: 'var(--cream-50)', borderRadius: 'var(--radius-pill)', padding: '9px 18px', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
               <Icon name="Leaf" size={17} color="var(--green-600)" />
               <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, color: 'var(--green-900)' }}>Formulado a tu medida</span>
             </div>
