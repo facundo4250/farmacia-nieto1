@@ -1187,7 +1187,7 @@ function Intro({ onDone }) {
     { top: 28, left: -28, s: 16, d: '.6s' },
   ];
   return (
-    <div onClick={cerrar} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, background: 'radial-gradient(120% 120% at 50% 35%, var(--mint-50), var(--cream-100) 65%)', transition: 'opacity .55s ease', opacity: leaving ? 0 : 1, pointerEvents: leaving ? 'none' : 'auto', cursor: 'pointer' }}>
+    <div onClick={cerrar} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: 'radial-gradient(130% 130% at 50% 32%, var(--green-700), var(--green-950) 72%)', transition: 'opacity .55s ease', opacity: leaving ? 0 : 1, pointerEvents: leaving ? 'none' : 'auto', cursor: 'pointer' }}>
       <div style={{ position: 'relative', animation: 'fnIntroLogo 1s var(--ease-out) both' }}>
         <span style={{ position: 'absolute', inset: 8, borderRadius: 28, animation: 'fnGlow 2.2s ease-in-out infinite' }} />
         <img src={IMG_LOGO} alt="Farmacia Nieto" style={{ position: 'relative', width: 180, height: 180, objectFit: 'contain', borderRadius: 28, boxShadow: 'var(--shadow-lg)' }} />
@@ -1196,8 +1196,8 @@ function Intro({ onDone }) {
         ))}
       </div>
       <div style={{ animation: 'fnRise .8s .3s var(--ease-out) both', textAlign: 'center' }}>
-        <Wordmark />
-        <div style={{ marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 12, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--green-600)', fontWeight: 600 }}>Elaboración magistral</div>
+        <Wordmark light />
+        <div style={{ marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 12, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--gold-300)', fontWeight: 600 }}>Elaboración magistral</div>
       </div>
     </div>
   );
