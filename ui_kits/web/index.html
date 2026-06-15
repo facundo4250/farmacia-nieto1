@@ -1204,12 +1204,14 @@ function EstadoPedido() {
   const cancelado = res && res !== 'notfound' && res.estado === 'cancelado';
 
   return (
-    <section id="estado" className="fn-section" style={{ background: 'var(--mint-50)' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <section id="estado" className="fn-section" style={{ background: 'var(--green-900)' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto', background: 'linear-gradient(165deg, var(--cream-50), var(--mint-100))', border: '1.5px solid var(--gold-300)', borderRadius: 'var(--radius-2xl)', padding: 'clamp(28px, 5vw, 44px)', boxShadow: 'var(--shadow-xl)' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <span className="nieto-eyebrow">Seguimiento</span>
-          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 10px' }}>Seguí tu pedido</h2>
-          <p style={{ fontSize: 16, color: 'var(--ink-500)', margin: '0 auto', maxWidth: 520 }}>Ingresá tu número de retiro y mirá en qué etapa está tu fórmula.</p>
+          <span style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--green-800)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, boxShadow: 'var(--shadow-gold)' }}>
+            <Icon name="PackageSearch" size={28} color="var(--gold-300)" />
+          </span>
+          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '0 0 10px' }}>Seguí tu pedido</h2>
+          <p style={{ fontSize: 16, color: 'var(--ink-500)', margin: '0 auto', maxWidth: 480 }}>Ingresá tu número de retiro y mirá en qué etapa está tu fórmula.</p>
         </div>
         <form onSubmit={buscar} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
           <input className="fn-input" type="number" inputMode="numeric" placeholder="N° de retiro" value={nro} onChange={(e) => setNro(e.target.value)} style={{ maxWidth: 220 }} />
