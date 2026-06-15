@@ -207,7 +207,7 @@ button { font-family: inherit; }
 ::selection { background: color-mix(in oklab, var(--gold-400) 55%, transparent); color: var(--ink-900); }
 :focus-visible { outline: 2px solid var(--green-600); outline-offset: 2px; border-radius: var(--radius-xs); }
 .nieto-script { font-family: var(--font-script); font-weight: 400; color: var(--green-700); line-height: 1; }
-.nieto-eyebrow { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--green-600); }
+.nieto-eyebrow { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--wood-700); }
 .nieto-caps { font-family: var(--font-serif); font-weight: 600; letter-spacing: var(--tracking-wider); text-transform: uppercase; }
 
 /* ── Button ───────────────────────────────────────────────── */
@@ -439,6 +439,18 @@ button { font-family: inherit; }
 @keyframes fnSpin { to { transform: rotate(360deg); } }
 @keyframes fnBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 @keyframes fnLoad { 0% { transform: translateX(-130%); } 100% { transform: translateX(380%); } }
+
+/* ── Aparición al hacer scroll ────────────────────────────── */
+.fn-anim .fn-section > div { opacity: 0; transform: translateY(28px); transition: opacity .75s var(--ease-out), transform .75s var(--ease-out); }
+.fn-anim .fn-section > div.fn-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .fn-anim .fn-section > div { opacity: 1 !important; transform: none !important; transition: none; } }
+
+/* ── Flourish dorado bajo los títulos ─────────────────────── */
+.fn-section-title::after, .fn-h2-40::after {
+  content: ''; display: block; width: 80px; height: 16px; margin: 16px auto 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16'%3E%3Cg stroke='%23d4a32c' stroke-width='1.4' fill='none' stroke-linecap='round'%3E%3Cline x1='4' y1='8' x2='30' y2='8'/%3E%3Cline x1='50' y1='8' x2='76' y2='8'/%3E%3C/g%3E%3Cpath d='M40 2C44 6 44 10 40 14 36 10 36 6 40 2Z' fill='%23d4a32c'/%3E%3C/svg%3E") no-repeat center;
+}
+.fn-h2-40::after { margin: 14px 0 0; background-position: left center; }
 </style>
 </head>
 <body>
@@ -1234,6 +1246,16 @@ function NietoSite() {
     if (el) window.scrollTo({ top: el.offsetTop - 70, behavior: 'smooth' });
   };
   const goCta = () => scrollTo('contacto');
+
+  // Aparición suave de cada sección al hacer scroll
+  React.useEffect(() => {
+    document.documentElement.classList.add('fn-anim');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('fn-in'); io.unobserve(e.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.fn-section > div').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   return (
     <div>
