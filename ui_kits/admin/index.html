@@ -301,6 +301,16 @@ function comprimirImagen(file, maxLado = 1280, calidad = 0.72) {
   });
 }
 async function subirReceta(file) {
+  const esPdf = file.type === 'application/pdf' || (file.name || '').toLowerCase().endsWith('.pdf');
+  if (esPdf) {
+    if (!SUPA_ON) {
+      return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('archivo')); r.readAsDataURL(file); });
+    }
+    const path = `receta-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.pdf`;
+    const { error } = await supa.storage.from('recetas').upload(path, file, { contentType: 'application/pdf' });
+    if (error) throw error;
+    return path;
+  }
   const dataUrl = await comprimirImagen(file);
   if (!SUPA_ON) return dataUrl;
   const blob = await (await fetch(dataUrl)).blob();
@@ -498,8 +508,15 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
   const elegirFoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    try { setPreview(await comprimirImagen(file, 480, 0.6)); setArchivo(file); }
-    catch { setErr('No se pudo leer esa imagen.'); }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const esImg = file.type === 'image/jpeg' || file.type === 'image/png' || ['jpg', 'jpeg', 'png'].includes(ext);
+    const esPdf = file.type === 'application/pdf' || ext === 'pdf';
+    if (!esImg && !esPdf) { setErr('Formato no permitido. Solo JPG, JPEG, PNG o PDF.'); e.target.value = ''; return; }
+    try {
+      if (esImg) { setPreview(await comprimirImagen(file, 480, 0.6)); setArchivo(file); }
+      else { if (file.size > 4 * 1024 * 1024) { setErr('El archivo es muy grande (máx. 4 MB).'); return; } setPreview(''); setArchivo(file); }
+    }
+    catch { setErr('No se pudo leer ese archivo.'); }
   };
   const quitarFoto = () => { setPreview(''); setArchivo(null); setReceta(''); };
 
@@ -531,7 +548,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
     }
   };
 
-  const hayFoto = preview || receta;
+  const hayFoto = preview || receta || archivo;
   const cardRef = React.useRef(null);
   React.useEffect(() => { try { cardRef.current && cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, []);
   return (
@@ -616,8 +633,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
             </div>
           ) : (
             <label className="fn-btn fn-btn--outline fn-btn--md" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
-              <Icon name="Camera" size={16} /> <span>Subir / sacar foto</span>
-              <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
+              <Icon name="Camera" size={16} /> <span>Subir foto o archivo (PDF)</span>
+              <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" onChange={elegirFoto} style={{ display: 'none' }} />
             </label>
           )}
         </div>

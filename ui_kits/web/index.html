@@ -930,8 +930,16 @@ function Contact({ formState }) {
   const elegirFoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const esImg = file.type === 'image/jpeg' || file.type === 'image/png' || ['jpg', 'jpeg', 'png'].includes(ext);
+    const esPdf = file.type === 'application/pdf' || ext === 'pdf';
+    if (!esImg && !esPdf) {
+      setErrEnvio('Formato no permitido. Subí solo archivos JPG, JPEG, PNG o PDF.');
+      e.target.value = '';
+      return;
+    }
     try {
-      if (file.type.startsWith('image/')) {
+      if (esImg) {
         setReceta(await comprimirImagen(file)); // las imágenes se comprimen
       } else {
         if (file.size > 4 * 1024 * 1024) { setErrEnvio('El archivo es muy grande (máximo 4 MB). Probá comprimirlo o sacale una foto.'); return; }
@@ -941,7 +949,7 @@ function Contact({ formState }) {
           r.onerror = () => rej(new Error('archivo'));
           r.readAsDataURL(file);
         });
-        setReceta(dataUrl); // PDF u otro: se guarda tal cual
+        setReceta(dataUrl); // PDF: se guarda tal cual
       }
     } catch { setErrEnvio('No se pudo leer ese archivo. Probá con otro.'); }
   };
@@ -1023,11 +1031,11 @@ function Contact({ formState }) {
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <label className="fn-btn fn-btn--outline fn-btn--md" style={{ cursor: 'pointer' }}>
                       <Icon name="Camera" size={16} /> <span>Sacar / subir foto</span>
-                      <input type="file" accept="image/*" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
+                      <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" capture="environment" onChange={elegirFoto} style={{ display: 'none' }} />
                     </label>
                     <label className="fn-btn fn-btn--outline fn-btn--md" style={{ cursor: 'pointer' }}>
                       <Icon name="Paperclip" size={16} /> <span>Subir archivo (PDF)</span>
-                      <input type="file" accept="image/*,application/pdf" onChange={elegirFoto} style={{ display: 'none' }} />
+                      <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" onChange={elegirFoto} style={{ display: 'none' }} />
                     </label>
                   </div>
                 )}
