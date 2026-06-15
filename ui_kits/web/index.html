@@ -904,7 +904,7 @@ async function enviarPedido(p, captchaToken) {
     try {
       resp = await fetch(FN_CFG.CREAR_PEDIDO_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': FN_CFG.SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'apikey': FN_CFG.SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + FN_CFG.SUPABASE_ANON_KEY },
         body: JSON.stringify({
           captchaToken,
           nombre: p.nombre, telefono: p.telefono,
