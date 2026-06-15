@@ -329,7 +329,10 @@ async function resolverReceta(receta) {
   return data.signedUrl;
 }
 // ¿la receta es un PDF (u otro archivo no-imagen)?
-const esRecetaPdf = (receta) => !!receta && (receta.startsWith('data:application/pdf') || receta.toLowerCase().endsWith('.pdf'));
+// PDF solo si es data:application/pdf real, o una ruta de Storage .pdf (NO un data: de otro tipo)
+const esRecetaPdf = (receta) => !!receta && (receta.startsWith('data:application/pdf') || (!receta.startsWith('data:') && receta.toLowerCase().endsWith('.pdf')));
+// Seguridad: solo permitimos mostrar imágenes jpg/png o PDF. Cualquier otro data: (ej. data:text/html) se rechaza (evita XSS).
+const recetaSegura = (receta) => !!receta && (!receta.startsWith('data:') || receta.startsWith('data:image/jpeg') || receta.startsWith('data:image/png') || receta.startsWith('data:image/jpg') || receta.startsWith('data:application/pdf'));
 
 /* ════════════════════════════════════════════════════════════
    Componentes base (sistema de diseño Farmacia Nieto)
@@ -1028,6 +1031,7 @@ function Panel({ session, onSalir }) {
     await refrescar();
   };
   const abrirReceta = async (receta) => {
+    if (!recetaSegura(receta)) { setErrCarga('La receta tiene un formato no permitido y no se puede mostrar.'); return; }
     try {
       const url = await resolverReceta(receta);
       const esPdf = esRecetaPdf(receta);
@@ -1044,6 +1048,7 @@ function Panel({ session, onSalir }) {
     URL.revokeObjectURL(a.href);
   };
   const descargarReceta = async (receta) => {
+    if (!recetaSegura(receta)) { setErrCarga('La receta tiene un formato no permitido.'); return; }
     try { await bajarUrl(await resolverReceta(receta)); }
     catch (e) { setErrCarga('No se pudo descargar la foto de la receta.'); }
   };
@@ -1264,7 +1269,7 @@ function Panel({ session, onSalir }) {
               </div>
             </div>
             {recetaVer.esPdf
-              ? <iframe title="Receta (PDF)" src={recetaVer.url} style={{ width: 'min(92vw, 820px)', height: '80vh', border: 0, borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
+              ? <iframe title="Receta (PDF)" src={recetaVer.url} sandbox="allow-same-origin" referrerPolicy="no-referrer" style={{ width: 'min(92vw, 820px)', height: '80vh', border: 0, borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />
               : <img src={recetaVer.url} alt="Receta" style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 52px)', objectFit: 'contain', borderRadius: 'var(--radius-lg)', background: 'var(--cream-100)', boxShadow: 'var(--shadow-xl)' }} />}
           </div>
         </div>
