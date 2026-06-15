@@ -335,6 +335,10 @@ async function resolverReceta(receta) {
 const esRecetaPdf = (receta) => !!receta && (receta.startsWith('data:application/pdf') || (!receta.startsWith('data:') && receta.toLowerCase().endsWith('.pdf')));
 // Seguridad: solo permitimos mostrar imágenes jpg/png o PDF. Cualquier otro data: (ej. data:text/html) se rechaza (evita XSS).
 const recetaSegura = (receta) => !!receta && (!receta.startsWith('data:') || receta.startsWith('data:image/jpeg') || receta.startsWith('data:image/png') || receta.startsWith('data:image/jpg') || receta.startsWith('data:application/pdf'));
+// ¿la receta está archivada en Google Drive? (guardamos solo el enlace)
+const esDrive = (receta) => !!receta && typeof receta === 'string' && receta.includes('drive.google.com');
+// Devuelve el valor de receta a mostrar: enlace de Drive si existe, si no la imagen/archivo guardado.
+const recetaDe = (p) => p.receta_drive_url || p.receta_img || '';
 
 /* ════════════════════════════════════════════════════════════
    Componentes base (sistema de diseño Farmacia Nieto)
@@ -495,7 +499,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
   const { precioN, pagoTodo, saldoBase } = cb;
   const estadoActual = inicial?.estado || 'nuevo';
   const mostrarSaldoPago = estadoActual === 'listo' || estadoActual === 'entregado'; // el saldo se cobra al retirar
-  const [receta, setReceta] = React.useState(inicial?.receta_img || ''); // valor ya guardado
+  const [receta, setReceta] = React.useState(inicial?.receta_img || ''); // valor ya guardado (imagen/archivo en la base)
+  const recetaDrive = inicial?.receta_drive_url || '';                    // receta archivada en Drive (solo lectura)
   const [preview, setPreview] = React.useState('');                       // foto nueva elegida (dataURL)
   const [archivo, setArchivo] = React.useState(null);                     // File a subir
   const [busy, setBusy] = React.useState(false);
@@ -555,7 +560,7 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
     }
   };
 
-  const hayFoto = preview || receta || archivo;
+  const hayFoto = preview || receta || archivo || recetaDrive;
   const cardRef = React.useRef(null);
   React.useEffect(() => { try { cardRef.current && cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, []);
   return (
@@ -635,7 +640,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
                 : <span style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px solid var(--line-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--green-50)' }}><Icon name="FileText" size={26} color="var(--green-600)" /></span>}
               <div style={{ display: 'flex', gap: 8 }}>
                 {!preview && receta && <Button variant="outline" size="sm" onClick={() => onVerReceta(receta)} iconLeft={<Icon name="Eye" size={15} />}>Ver</Button>}
-                <Button variant="ghost" size="sm" onClick={quitarFoto} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>
+                {!preview && !receta && recetaDrive && <Button variant="outline" size="sm" onClick={() => onVerReceta(recetaDrive)} iconLeft={<Icon name="Eye" size={15} />}>Ver en Drive</Button>}
+                {!(recetaDrive && !receta && !preview && !archivo) && <Button variant="ghost" size="sm" onClick={quitarFoto} iconLeft={<Icon name="Trash2" size={15} />}>Quitar</Button>}
               </div>
             </div>
           ) : (
@@ -670,7 +676,8 @@ function fechaCorta(iso) {
 function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
   const cb = calcCobro(p);
   const { precioN, senaN, pagoTodo, saldoBase } = cb;
-  const tieneMeta = precioN != null || (p.sena || p.sena === 0) || p.entrega || p.receta_img || p.pago_resto_metodo;
+  const receta = recetaDe(p);
+  const tieneMeta = precioN != null || (p.sena || p.sena === 0) || p.entrega || receta || p.pago_resto_metodo;
   const est = ESTADOS[p.estado] || ESTADOS.nuevo;
   const acciones = FLUJO[p.estado] || [];
   return (
@@ -712,10 +719,10 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
                   <Icon name="Calendar" size={13} color="var(--ink-400)" /> Entrega ~ {formatEntrega(p.entrega)}
                 </span>
               )}
-              {p.receta_img && (
-                <button onClick={() => onVerReceta(p.receta_img)}
+              {receta && (
+                <button onClick={() => onVerReceta(receta)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: 'var(--green-700)', background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 'var(--radius-pill)', padding: '3px 10px', cursor: 'pointer' }}>
-                  <Icon name="Paperclip" size={13} color="var(--green-700)" /> Ver receta
+                  <Icon name="Paperclip" size={13} color="var(--green-700)" /> {esDrive(receta) ? 'Ver receta (Drive)' : 'Ver receta'}
                 </button>
               )}
             </div>
@@ -911,6 +918,11 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
             {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
             {p.notas_prep && <p style={{ fontSize: 13, color: 'var(--green-900)', background: 'var(--mint-100)', borderRadius: 'var(--radius-md)', padding: '8px 10px', margin: '8px 0 0', lineHeight: 1.45 }}><b>📝 Para el cliente: </b>{p.notas_prep}</p>}
             {p.receta_img && <div style={{ marginTop: 10 }}><RecetaThumb receta={p.receta_img} onVer={onVerReceta} onDescargar={onDescargarReceta} /></div>}
+            {!p.receta_img && p.receta_drive_url && (
+              <div style={{ marginTop: 10 }}>
+                <Button size="sm" variant="outline" onClick={() => onVerReceta(p.receta_drive_url)} iconLeft={<Icon name="Paperclip" size={14} />}>Ver receta en Drive</Button>
+              </div>
+            )}
           </Card>
         );
       })}
@@ -1033,6 +1045,8 @@ function Panel({ session, onSalir }) {
     await refrescar();
   };
   const abrirReceta = async (receta) => {
+    // Las recetas archivadas en Drive se abren en una pestaña nueva (no se pueden incrustar).
+    if (esDrive(receta)) { window.open(receta, '_blank', 'noopener,noreferrer'); return; }
     if (!recetaSegura(receta)) { setErrCarga('La receta tiene un formato no permitido y no se puede mostrar.'); return; }
     try {
       const url = await resolverReceta(receta);
@@ -1050,6 +1064,7 @@ function Panel({ session, onSalir }) {
     URL.revokeObjectURL(a.href);
   };
   const descargarReceta = async (receta) => {
+    if (esDrive(receta)) { window.open(receta, '_blank', 'noopener,noreferrer'); return; } // se descarga desde Drive
     if (!recetaSegura(receta)) { setErrCarga('La receta tiene un formato no permitido.'); return; }
     try { await bajarUrl(await resolverReceta(receta)); }
     catch (e) { setErrCarga('No se pudo descargar la foto de la receta.'); }

@@ -95,6 +95,8 @@ Si dice **Success**, listo.
 > alter table pedidos add column if not exists sena_desc numeric;
 > alter table pedidos add column if not exists resto_desc numeric;
 > alter table pedidos add column if not exists notas_prep text;
+> alter table pedidos add column if not exists receta_drive_url text;
+> alter table pedidos add column if not exists receta_drive_id text;
 > ```
 
 ### Paso 2b — Carpeta segura para las fotos de las recetas
