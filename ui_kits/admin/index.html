@@ -1105,12 +1105,41 @@ function Panel({ session, onSalir }) {
     [clientes]
   );
 
-  // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos.
+  // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos, prolijo.
   const exportarCSV = () => {
-    const cols = ['nro_retiro', 'creado', 'nombre', 'telefono', 'especialidad', 'detalle', 'notas_prep', 'estado', 'origen', 'precio', 'sena', 'pago_metodo', 'sena_desc', 'pago_resto_metodo', 'resto_desc', 'entrega'];
-    const esc = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    const filas = pedidos.map((p) => cols.map((c) => esc(c === 'creado' ? new Date(p.creado).toLocaleString('es-AR') : p[c])).join(','));
-    const csv = '\uFEFF' + cols.join(',') + '\n' + filas.join('\n');
+    const SEP = ';'; // el Excel en espa\u00F1ol usa punto y coma como separador de columnas
+    // Cu\u00E1ntos pedidos tiene cada cliente (para marcar recurrentes en la copia)
+    const conteo = {};
+    pedidos.forEach((p) => { const k = claveCliente(p); conteo[k] = (conteo[k] || 0) + 1; });
+
+    const cols = [
+      ['N\u00B0 de retiro', (p) => p.nro_retiro],
+      ['Fecha', (p) => p.creado ? new Date(p.creado).toLocaleDateString('es-AR') : ''],
+      ['Hora', (p) => p.creado ? new Date(p.creado).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''],
+      ['Estado', (p) => (ESTADOS[p.estado] || ESTADOS.nuevo).label],
+      ['Origen', (p) => p.origen === 'web' ? 'Web' : 'Cargado a mano'],
+      ['Cliente', (p) => p.nombre],
+      ['Tel\u00E9fono', (p) => p.telefono],
+      ['Pedidos del cliente', (p) => conteo[claveCliente(p)] || 1],
+      ['Recurrente', (p) => (conteo[claveCliente(p)] || 1) > 1 ? 'S\u00ED' : 'No'],
+      ['Especialidad', (p) => p.especialidad],
+      ['Detalle', (p) => p.detalle],
+      ['Anotaciones de preparaci\u00F3n', (p) => p.notas_prep],
+      ['Monto del preparado ($)', (p) => calcCobro(p).precioN],
+      ['Se\u00F1a ($)', (p) => calcCobro(p).senaN || ''],
+      ['Forma de pago de la se\u00F1a', (p) => p.pago_metodo],
+      ['Forma de pago del saldo', (p) => p.pago_resto_metodo],
+      ['Descuento efectivo (%)', (p) => { const d = calcCobro(p).desc; return d > 0 ? d : ''; }],
+      ['Descuento aplicado ($)', (p) => { const a = calcCobro(p).ahorro; return a > 0 ? a : ''; }],
+      ['Total final ($)', (p) => calcCobro(p).totalFinal],
+      ['Falta al retirar ($)', (p) => calcCobro(p).faltaCobrar],
+      ['Entrega estimada', (p) => formatEntrega(p.entrega)],
+      ['Receta', (p) => p.receta_drive_url ? p.receta_drive_url : (p.receta_img ? 'Adjunta (en el sistema)' : '')],
+    ];
+    const esc = (v) => { v = v == null ? '' : String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    const encabezados = cols.map((c) => esc(c[0])).join(SEP);
+    const filas = pedidos.map((p) => cols.map((c) => esc(c[1](p))).join(SEP));
+    const csv = '\uFEFF' + encabezados + '\n' + filas.join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'pedidos-farmacia-nieto-' + new Date().toISOString().slice(0, 10) + '.csv';
