@@ -63,6 +63,8 @@ create table pedidos (
 alter table pedidos enable row level security;
 
 -- Cualquiera puede ENVIAR un pedido desde la web (pero no leer los de otros)
+-- NOTA: si activás el captcha invisible (ver ui_kits/CAPTCHA.md), esta política
+-- se quita y los pedidos pasan a entrar solo por la función "crear-pedido".
 create policy "la web puede crear pedidos"
   on pedidos for insert to anon
   with check (origen = 'web' and estado = 'nuevo');

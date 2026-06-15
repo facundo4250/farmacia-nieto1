@@ -883,7 +883,41 @@ const FN_CFG = window.FN_CONFIG || {};
 const SUPA_ON = !!(FN_CFG.SUPABASE_URL && FN_CFG.SUPABASE_ANON_KEY && !FN_CFG.SUPABASE_URL.includes('TU-PROYECTO'));
 const supaWeb = (SUPA_ON && window.supabase) ? window.supabase.createClient(FN_CFG.SUPABASE_URL, FN_CFG.SUPABASE_ANON_KEY) : null;
 
-async function enviarPedido(p) {
+// Captcha invisible: activo solo cuando hay Site Key + URL de la función.
+const TURNSTILE_ON = !!(FN_CFG.TURNSTILE_SITE_KEY && FN_CFG.CREAR_PEDIDO_URL);
+
+// Carga el script de Cloudflare Turnstile una sola vez (solo si está activo).
+if (TURNSTILE_ON && !document.getElementById('cf-turnstile-script')) {
+  const s = document.createElement('script');
+  s.id = 'cf-turnstile-script';
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  s.async = true; s.defer = true;
+  document.head.appendChild(s);
+}
+
+async function enviarPedido(p, captchaToken) {
+  // Con captcha: el pedido pasa por la función de Supabase, que verifica el
+  // token contra Cloudflare y recién ahí lo guarda. Así un bot no puede
+  // mandar pedidos directo a la base.
+  if (TURNSTILE_ON) {
+    let resp;
+    try {
+      resp = await fetch(FN_CFG.CREAR_PEDIDO_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': FN_CFG.SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          captchaToken,
+          nombre: p.nombre, telefono: p.telefono,
+          especialidad: p.especialidad, detalle: p.detalle,
+          receta_img: p.receta_img || null,
+        }),
+      });
+    } catch (e) { throw new Error('sin conexión'); }
+    let data = {};
+    try { data = await resp.json(); } catch {}
+    if (!resp.ok || !data.ok) throw new Error((data && data.error) || ('error ' + resp.status));
+    return;
+  }
   if (!SUPA_ON) {
     const arr = JSON.parse(localStorage.getItem('fn_pedidos') || '[]');
     arr.unshift({ id: 'local-' + Date.now(), creado: new Date().toISOString(), estado: 'nuevo', origen: 'web', ...p });
@@ -924,6 +958,36 @@ function Contact({ formState }) {
   const [hp, setHp] = React.useState(''); // honeypot anti-bots (queda oculto)
   const [enviando, setEnviando] = React.useState(false);
   const [errEnvio, setErrEnvio] = React.useState('');
+  const [captchaToken, setCaptchaToken] = React.useState('');
+  const captchaRef = React.useRef(null);
+  const widgetId = React.useRef(null);
+
+  // Monta el captcha invisible (Turnstile) cuando está configurado.
+  React.useEffect(() => {
+    if (!TURNSTILE_ON || sent) return;
+    let cancelado = false;
+    const montar = () => {
+      if (cancelado || !captchaRef.current || widgetId.current !== null || !(window.turnstile && window.turnstile.render)) return;
+      widgetId.current = window.turnstile.render(captchaRef.current, {
+        sitekey: FN_CFG.TURNSTILE_SITE_KEY,
+        appearance: 'interaction-only', // invisible salvo que haga falta un toque
+        callback: (t) => setCaptchaToken(t),
+        'expired-callback': () => setCaptchaToken(''),
+        'error-callback': () => setCaptchaToken(''),
+      });
+    };
+    if (window.turnstile && window.turnstile.render) montar();
+    else {
+      const iv = setInterval(() => { if (window.turnstile && window.turnstile.render) { clearInterval(iv); montar(); } }, 300);
+      return () => { cancelado = true; clearInterval(iv); };
+    }
+    return () => { cancelado = true; };
+  }, [sent]);
+
+  const reiniciarCaptcha = () => {
+    setCaptchaToken('');
+    try { if (TURNSTILE_ON && window.turnstile && widgetId.current !== null) window.turnstile.reset(widgetId.current); } catch {}
+  };
   // Limpieza de caracteres (capa extra de seguridad / datos prolijos)
   const soloLetras = (v) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
   const soloTel = (v) => v.replace(/[^0-9+\-\s()]/g, '');
@@ -962,21 +1026,31 @@ function Contact({ formState }) {
     if (hp) { setSent(true); return; } // un bot completó el campo trampa: fingimos éxito y no enviamos
     const telDig = (campos.telefono || '').replace(/\D/g, '');
     if (telDig.length < 6) { setErrEnvio('Por favor ingresá un teléfono válido, con código de área.'); return; }
-    const ultimo = Number(localStorage.getItem('fn_ultimo_envio') || 0);
-    const faltan = ENVIO_MIN_HORAS * 3600000 - (Date.now() - ultimo);
-    if (ultimo && faltan > 0) {
-      const hs = Math.ceil(faltan / 3600000);
-      setErrEnvio(`Ya enviaste una consulta recientemente. Se permite una cada ${ENVIO_MIN_HORAS} h (faltan ~${hs} h). Si es urgente, escribinos por WhatsApp.`);
+    // El límite de 1 cada 24 h actúa solo cuando NO hay captcha. Con el captcha
+    // invisible activo, el captcha hace de filtro antibots y no hace falta limitar.
+    if (!TURNSTILE_ON) {
+      const ultimo = Number(localStorage.getItem('fn_ultimo_envio') || 0);
+      const faltan = ENVIO_MIN_HORAS * 3600000 - (Date.now() - ultimo);
+      if (ultimo && faltan > 0) {
+        const hs = Math.ceil(faltan / 3600000);
+        setErrEnvio(`Ya enviaste una consulta recientemente. Se permite una cada ${ENVIO_MIN_HORAS} h (faltan ~${hs} h). Si es urgente, escribinos por WhatsApp.`);
+        return;
+      }
+    }
+    if (TURNSTILE_ON && !captchaToken) {
+      setErrEnvio('Estamos verificando que no seas un robot. Esperá un segundo y volvé a tocar "Enviar consulta".');
       return;
     }
     setEnviando(true); setErrEnvio('');
     try {
-      await enviarPedido({ ...campos, receta_img: receta || null });
-      localStorage.setItem('fn_ultimo_envio', String(Date.now()));
+      await enviarPedido({ ...campos, receta_img: receta || null }, captchaToken);
+      if (!TURNSTILE_ON) localStorage.setItem('fn_ultimo_envio', String(Date.now()));
       setCampos({ nombre: '', telefono: '', especialidad: '', detalle: '' });
       setReceta('');
+      reiniciarCaptcha();
       setSent(true);
     } catch (ex) {
+      reiniciarCaptcha();
       setErrEnvio('No pudimos enviar tu consulta (' + (ex.message || 'error') + '). Probá de nuevo o escribinos por WhatsApp al (+54) 291 432-7031.');
     }
     setEnviando(false);
@@ -1043,6 +1117,7 @@ function Contact({ formState }) {
                   </div>
                 )}
               </div>
+              {TURNSTILE_ON && <div ref={captchaRef} style={{ display: 'flex', justifyContent: 'center' }} />}
               {errEnvio && <Alert variant="danger">{errEnvio}</Alert>}
               <Button variant="primary" size="lg" fullWidth type="submit" disabled={enviando} iconRight={<Icon name="Send" size={17} />}>
                 {enviando ? 'Enviando…' : 'Enviar consulta'}
