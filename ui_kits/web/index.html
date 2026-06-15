@@ -1016,11 +1016,11 @@ function Contact({ formState }) {
               {!SUPA_ON && <Alert variant="warning" title="Modo de prueba">Este archivo no está conectado a la nube, así que el pedido se guarda solo en esta computadora y no llega al panel. Asegurate de abrir la web desde la carpeta completa (con el archivo config.js al lado).</Alert>}
               <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, border: 0, opacity: 0, overflow: 'hidden', clipPath: 'inset(50%)', pointerEvents: 'none' }} />
               <div className="fn-form-row">
-                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre', soloLetras)} />
-                <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono', soloTel)} />
+                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required maxLength={120} value={campos.nombre} onChange={setCampo('nombre', soloLetras)} />
+                <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required maxLength={40} value={campos.telefono} onChange={setCampo('telefono', soloTel)} />
               </div>
               <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
-              <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle', textoSeguro)} />
+              <Textarea label="Contanos qué necesitás" rows={3} maxLength={1000} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle', textoSeguro)} />
               <div className="fn-field">
                 <span className="fn-field__label">Receta <span style={{ fontWeight: 400, color: 'var(--ink-400)' }}>(opcional — foto o archivo PDF)</span></span>
                 {receta ? (
