@@ -451,6 +451,12 @@ button { font-family: inherit; }
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16'%3E%3Cg stroke='%23d4a32c' stroke-width='1.4' fill='none' stroke-linecap='round'%3E%3Cline x1='4' y1='8' x2='30' y2='8'/%3E%3Cline x1='50' y1='8' x2='76' y2='8'/%3E%3C/g%3E%3Cpath d='M40 2C44 6 44 10 40 14 36 10 36 6 40 2Z' fill='%23d4a32c'/%3E%3C/svg%3E") no-repeat center;
 }
 .fn-h2-40::after { margin: 14px 0 0; background-position: left center; }
+
+/* ── Tarjetas de especialidades (hover con vida) ──────────── */
+.fn-spec-ico { transition: background var(--dur-base) var(--ease-soft); }
+.fn-spec-card:hover { border-color: var(--gold-300); }
+.fn-spec-card:hover .fn-spec-ico { background: var(--green-900); }
+.fn-spec-card:hover .fn-spec-ico svg { stroke: var(--gold-300); }
 </style>
 </head>
 <body>
@@ -734,12 +740,12 @@ function Hero({ onCta, onNav }) {
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Button variant="primary" size="lg" onClick={onCta} iconRight={<Icon name="ArrowRight" size={18} />}>Pedí tu fórmula</Button>
-            <Button href={waLink} target="_blank" rel="noopener noreferrer" size="lg" iconLeft={<Icon name="MessageCircle" size={18} color="#fff" />} style={{ background: '#25D366', color: '#fff', borderColor: 'transparent' }}>WhatsApp</Button>
+            <Button href={waLink} target="_blank" rel="noopener noreferrer" size="lg" iconLeft={<Icon name="MessageCircle" size={18} color="#fff" />} style={{ background: 'var(--green-600)', color: '#fff', borderColor: 'transparent' }}>WhatsApp</Button>
           </div>
           <a href="#especialidades" onClick={(e) => { e.preventDefault(); onNav('especialidades'); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 14, color: 'var(--green-700)' }}>Conocé las especialidades →</a>
         </div>
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: '6% 12%', background: 'var(--green-300)', borderRadius: '46% 54% 58% 42% / 52% 44% 56% 48%', opacity: .35, filter: 'blur(4px)' }} />
+          <div style={{ position: 'absolute', inset: '-8%', background: 'radial-gradient(circle at 50% 45%, rgba(221,180,56,.20), rgba(155,195,174,.12) 45%, transparent 65%)', filter: 'blur(6px)' }} />
           <div style={{ position: 'relative', background: 'var(--mint-100)', borderRadius: 'var(--radius-2xl)', padding: 26, boxShadow: 'var(--shadow-xl)' }}>
             <img className="fn-hero-art" src={IMG_LOGO} alt="Farmacia Nieto" style={{ objectFit: 'contain', borderRadius: 'var(--radius-xl)' }} />
             <div style={{ position: 'absolute', bottom: -18, left: '50%', transform: 'translateX(-50%)', background: 'var(--cream-50)', borderRadius: 'var(--radius-pill)', padding: '9px 18px', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
@@ -776,8 +782,8 @@ function Specialties({ onCta }) {
         </div>
         <div className="fn-spec-grid">
           {SPECIALTIES.map(([icon, name, desc]) => (
-            <Card key={name} interactive>
-              <span style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--green-100)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+            <Card key={name} interactive className="fn-spec-card">
+              <span className="fn-spec-ico" style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--green-100)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
                 <Icon name={icon} size={23} color="var(--green-700)" stroke={1.7} />
               </span>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 19, color: 'var(--green-900)', margin: 0 }}>{name}</h3>
@@ -1171,6 +1177,14 @@ function Footer() {
           <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: .8, margin: 0 }}>Elaboración magistral desde 1996. Cuidamos de ti de manera personalizada.</p>
         </div>
         <div style={{ display: 'flex', gap: 52, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 11.5, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--green-300)', marginBottom: 12 }}>Visitanos</div>
+            <div style={{ fontSize: 13.5, opacity: .85 }}>{CONTACTO.direccion}</div>
+            <div style={{ fontSize: 13.5, opacity: .85, marginBottom: 12 }}>{CONTACTO.ciudad}</div>
+            {CONTACTO.horarios.map(([d, h]) => (
+              <div key={d} style={{ fontSize: 12.5, opacity: .8, marginBottom: 4 }}><span style={{ color: 'var(--green-300)', fontWeight: 600 }}>{d}:</span> {h}</div>
+            ))}
+          </div>
           <div>
             <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 11.5, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--green-300)', marginBottom: 12 }}>Contacto</div>
             {['(+54) 291 432-7031', 'farmacia_nieto@hotmail.com', '@farmacia.nieto'].map((t) => (
