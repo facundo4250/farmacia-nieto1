@@ -1352,11 +1352,17 @@ function NietoSite() {
 
   const scrollTo = (id) => {
     setActive(id);
-    // esperamos a que el menú móvil se cierre y la página se reacomode antes de scrollear
     setTimeout(() => {
       const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 90);
+      if (!el) return;
+      // revelar la sección destino (que no quede invisible por la animación) antes de medir
+      if (el.firstElementChild) el.firstElementChild.classList.add('fn-in');
+      const destino = () => Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - 84);
+      window.scrollTo({ top: destino(), behavior: 'smooth' });
+      // correcciones por si el mapa/embed/imagenes reacomodan el largo mientras scrollea
+      setTimeout(() => window.scrollTo({ top: destino(), behavior: 'auto' }), 550);
+      setTimeout(() => window.scrollTo({ top: destino(), behavior: 'auto' }), 1200);
+    }, 80);
   };
   const goCta = () => scrollTo('contacto');
 
