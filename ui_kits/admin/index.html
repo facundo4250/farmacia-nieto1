@@ -496,7 +496,9 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState('');
   const [busca, setBusca] = React.useState('');                           // buscar paciente existente
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const soloLetras = (v) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+  const soloTel = (v) => v.replace(/[^0-9+\-\s()]/g, '');
+  const set = (k, limpiar) => (e) => setF({ ...f, [k]: limpiar ? limpiar(e.target.value) : e.target.value });
 
   const qDig = busca.replace(/\D/g, '');
   const matches = !busca.trim() ? [] : clientes.filter((c) =>
@@ -580,8 +582,8 @@ function PedidoForm({ inicial, onGuardar, onCerrar, onVerReceta, onBorrar, clien
           </div>
         )}
         <div className="fp-form-row">
-          <Input label="Nombre y apellido" required value={f.nombre} onChange={set('nombre')} placeholder="Nombre del paciente" />
-          <Input label="Teléfono" required value={f.telefono} onChange={set('telefono')} placeholder="291 …" />
+          <Input label="Nombre y apellido" required value={f.nombre} onChange={set('nombre', soloLetras)} placeholder="Nombre del paciente" />
+          <Input label="Teléfono" required value={f.telefono} onChange={set('telefono', soloTel)} placeholder="291 …" />
         </div>
         <Select label="Especialidad" placeholder="Elegí una opción" options={ESPECIALIDADES} value={f.especialidad} onChange={set('especialidad')} />
         <Textarea label="Detalle de la receta / pedido" value={f.detalle} onChange={set('detalle')} placeholder="Fórmula, dosis, indicaciones…" />

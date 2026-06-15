@@ -924,7 +924,11 @@ function Contact({ formState }) {
   const [hp, setHp] = React.useState(''); // honeypot anti-bots (queda oculto)
   const [enviando, setEnviando] = React.useState(false);
   const [errEnvio, setErrEnvio] = React.useState('');
-  const setCampo = (k) => (e) => setCampos({ ...campos, [k]: e.target.value });
+  // Limpieza de caracteres (capa extra de seguridad / datos prolijos)
+  const soloLetras = (v) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+  const soloTel = (v) => v.replace(/[^0-9+\-\s()]/g, '');
+  const textoSeguro = (v) => v.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s.,]/g, '');
+  const setCampo = (k, limpiar) => (e) => setCampos({ ...campos, [k]: limpiar ? limpiar(e.target.value) : e.target.value });
 
   const elegirFoto = async (e) => {
     const file = e.target.files[0];
@@ -983,7 +987,7 @@ function Contact({ formState }) {
         <div>
           <span className="nieto-eyebrow">Estamos para ayudarte</span>
           <h2 className="fn-h2-40" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 14px', lineHeight: 1.1 }}>Para más asesoramiento y consultas, comunicate con nosotros</h2>
-          <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--ink-500)', margin: '0 0 28px' }}>Cuidamos de ti de manera personalizada. Escribinos y te respondemos a la brevedad.</p>
+          <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--ink-500)', margin: '0 0 28px' }}>Cuidamos de vos de manera personalizada. Escribinos y te respondemos a la brevedad.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[['Phone', CONTACTO.telDisplay, 'WhatsApp', waLink], ['Mail', CONTACTO.email, 'Email', mailLink], ['Instagram', '@' + CONTACTO.instagram, 'Instagram', igLink]].map(([icon, val, lbl, href]) => (
               <a key={lbl} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
@@ -1012,11 +1016,11 @@ function Contact({ formState }) {
               {!SUPA_ON && <Alert variant="warning" title="Modo de prueba">Este archivo no está conectado a la nube, así que el pedido se guarda solo en esta computadora y no llega al panel. Asegurate de abrir la web desde la carpeta completa (con el archivo config.js al lado).</Alert>}
               <input type="text" name="empresa" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, border: 0, opacity: 0, overflow: 'hidden', clipPath: 'inset(50%)', pointerEvents: 'none' }} />
               <div className="fn-form-row">
-                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre')} />
-                <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono')} />
+                <Input label="Nombre y apellido" placeholder="Patricia Nieto" required value={campos.nombre} onChange={setCampo('nombre', soloLetras)} />
+                <Input label="Teléfono" type="tel" inputMode="tel" placeholder="291 …" required value={campos.telefono} onChange={setCampo('telefono', soloTel)} />
               </div>
               <Select label="Especialidad" placeholder="Elegí una opción" options={SPECIALTIES.map((s) => s[1])} value={campos.especialidad} onChange={setCampo('especialidad')} />
-              <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle')} />
+              <Textarea label="Contanos qué necesitás" rows={3} placeholder="Detalle de la receta o consulta…" value={campos.detalle} onChange={setCampo('detalle', textoSeguro)} />
               <div className="fn-field">
                 <span className="fn-field__label">Receta <span style={{ fontWeight: 400, color: 'var(--ink-400)' }}>(opcional — foto o archivo PDF)</span></span>
                 {receta ? (
@@ -1287,7 +1291,7 @@ function Footer() {
             <img src={IMG_EMBLEM} alt="" style={{ width: 42, height: 42, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.3))' }} />
             <Wordmark light />
           </div>
-          <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: .8, margin: 0 }}>Elaboración magistral desde 1996. Cuidamos de ti de manera personalizada.</p>
+          <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: .8, margin: 0 }}>Elaboración magistral desde 1996. Cuidamos de vos de manera personalizada.</p>
         </div>
         <div style={{ display: 'flex', gap: 52, flexWrap: 'wrap' }}>
           <div>
