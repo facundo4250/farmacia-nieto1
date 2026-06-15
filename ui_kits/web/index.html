@@ -174,7 +174,7 @@
 
 /* ── Base resets ──────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 84px; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 84px; overflow-x: clip; max-width: 100%; }
 body {
   margin: 0;
   background-color: var(--bg-page);
@@ -1146,7 +1146,7 @@ function InstagramFeed() {
     document.body.appendChild(s);
   }, []);
   return (
-    <section id="instagram" className="fn-section" style={{ background: 'var(--mint-50)' }}>
+    <section id="instagram" className="fn-section" style={{ background: 'var(--mint-50)', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
         <span className="nieto-eyebrow">Seguinos</span>
         <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 10px' }}>Nuestro Instagram</h2>
