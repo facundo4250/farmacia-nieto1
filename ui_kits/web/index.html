@@ -1237,7 +1237,17 @@ function EstadoPedido() {
                     <div style={{ paddingTop: 9 }}>
                       <div style={{ fontWeight: 700, fontSize: 16, color: activo ? 'var(--green-900)' : 'var(--ink-400)' }}>{label}</div>
                       {current && <div style={{ fontSize: 13, color: 'var(--green-600)', fontWeight: 600, marginTop: 2 }}>● Acá está tu pedido ahora</div>}
-                      {current && key === 'listo' && res.entrega && <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 2 }}>Pasá a retirarlo. Entrega estimada: {new Date(res.entrega + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}.</div>}
+                      {current && (key === 'nuevo' || key === 'en_preparacion') && res.entrega && <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 2 }}>Estará lista aprox. el {new Date(res.entrega + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}.</div>}
+                      {current && key === 'listo' && (
+                        <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 4 }}>
+                          ¡Ya podés pasar a retirarlo! Te esperamos en <b style={{ color: 'var(--green-800)' }}>{CONTACTO.direccion}</b>, en estos horarios:
+                          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {CONTACTO.horarios.map(([d, h]) => (
+                              <div key={d} style={{ fontSize: 12.5 }}><b style={{ color: 'var(--green-800)' }}>{d}:</b> {h}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
