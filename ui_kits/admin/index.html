@@ -15,6 +15,7 @@
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="../config.js"></script>
 <style>
 /* ── Tokens (Farmacia Nieto design system) ────────────────── */
@@ -1105,46 +1106,82 @@ function Panel({ session, onSalir }) {
     [clientes]
   );
 
-  // Descarga una copia de respaldo (CSV que abre Excel) con todos los pedidos, prolijo.
+  // Descarga una copia de respaldo en Excel (.xlsx) con todos los pedidos, prolija.
   const exportarCSV = () => {
-    const SEP = ';'; // el Excel en espa\u00F1ol usa punto y coma como separador de columnas
     // Cu\u00E1ntos pedidos tiene cada cliente (para marcar recurrentes en la copia)
     const conteo = {};
     pedidos.forEach((p) => { const k = claveCliente(p); conteo[k] = (conteo[k] || 0) + 1; });
+    const num = (v) => (v == null || v === '' || isNaN(Number(v))) ? '' : Number(v);
 
+    // [ encabezado, valor(p), ancho, formato-de-n\u00FAmero opcional ]
     const cols = [
-      ['N\u00B0 de retiro', (p) => p.nro_retiro],
-      ['Fecha', (p) => p.creado ? new Date(p.creado).toLocaleDateString('es-AR') : ''],
-      ['Hora', (p) => p.creado ? new Date(p.creado).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''],
-      ['Estado', (p) => (ESTADOS[p.estado] || ESTADOS.nuevo).label],
-      ['Origen', (p) => p.origen === 'web' ? 'Web' : 'Cargado a mano'],
-      ['Cliente', (p) => p.nombre],
-      ['Tel\u00E9fono', (p) => p.telefono],
-      ['Pedidos del cliente', (p) => conteo[claveCliente(p)] || 1],
-      ['Recurrente', (p) => (conteo[claveCliente(p)] || 1) > 1 ? 'S\u00ED' : 'No'],
-      ['Especialidad', (p) => p.especialidad],
-      ['Detalle', (p) => p.detalle],
-      ['Anotaciones de preparaci\u00F3n', (p) => p.notas_prep],
-      ['Monto del preparado ($)', (p) => calcCobro(p).precioN],
-      ['Se\u00F1a ($)', (p) => calcCobro(p).senaN || ''],
-      ['Forma de pago de la se\u00F1a', (p) => p.pago_metodo],
-      ['Forma de pago del saldo', (p) => p.pago_resto_metodo],
-      ['Descuento efectivo (%)', (p) => { const d = calcCobro(p).desc; return d > 0 ? d : ''; }],
-      ['Descuento aplicado ($)', (p) => { const a = calcCobro(p).ahorro; return a > 0 ? a : ''; }],
-      ['Total final ($)', (p) => calcCobro(p).totalFinal],
-      ['Falta al retirar ($)', (p) => calcCobro(p).faltaCobrar],
-      ['Entrega estimada', (p) => formatEntrega(p.entrega)],
-      ['Receta', (p) => p.receta_drive_url ? p.receta_drive_url : (p.receta_img ? 'Adjunta (en el sistema)' : '')],
+      ['N\u00B0 de retiro', (p) => num(p.nro_retiro), 12],
+      ['Fecha', (p) => p.creado ? new Date(p.creado).toLocaleDateString('es-AR') : '', 12],
+      ['Hora', (p) => p.creado ? new Date(p.creado).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '', 8],
+      ['Estado', (p) => (ESTADOS[p.estado] || ESTADOS.nuevo).label, 16],
+      ['Origen', (p) => p.origen === 'web' ? 'Web' : 'Cargado a mano', 15],
+      ['Cliente', (p) => p.nombre || '', 22],
+      ['Tel\u00E9fono', (p) => p.telefono || '', 16],
+      ['Pedidos del cliente', (p) => conteo[claveCliente(p)] || 1, 12],
+      ['Recurrente', (p) => (conteo[claveCliente(p)] || 1) > 1 ? 'S\u00ED' : 'No', 11],
+      ['Especialidad', (p) => p.especialidad || '', 20],
+      ['Detalle', (p) => p.detalle || '', 42],
+      ['Anotaciones de preparaci\u00F3n', (p) => p.notas_prep || '', 32],
+      ['Monto del preparado', (p) => num(calcCobro(p).precioN), 16, '"$ "#,##0'],
+      ['Se\u00F1a', (p) => num(calcCobro(p).senaN), 13, '"$ "#,##0'],
+      ['Pago de la se\u00F1a', (p) => p.pago_metodo || '', 18],
+      ['Pago del saldo', (p) => p.pago_resto_metodo || '', 18],
+      ['Descuento efectivo (%)', (p) => { const d = calcCobro(p).desc; return d > 0 ? d : ''; }, 14, '0"%"'],
+      ['Descuento aplicado', (p) => { const a = calcCobro(p).ahorro; return a > 0 ? a : ''; }, 16, '"$ "#,##0'],
+      ['Total final', (p) => num(calcCobro(p).totalFinal), 16, '"$ "#,##0'],
+      ['Falta al retirar', (p) => num(calcCobro(p).faltaCobrar), 16, '"$ "#,##0'],
+      ['Entrega estimada', (p) => formatEntrega(p.entrega), 14],
+      ['Receta', (p) => p.receta_drive_url ? p.receta_drive_url : (p.receta_img ? 'Adjunta (en el sistema)' : ''), 42],
     ];
-    const esc = (v) => { v = v == null ? '' : String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    const encabezados = cols.map((c) => esc(c[0])).join(SEP);
-    const filas = pedidos.map((p) => cols.map((c) => esc(c[1](p))).join(SEP));
-    const csv = '\uFEFF' + encabezados + '\n' + filas.join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'pedidos-farmacia-nieto-' + new Date().toISOString().slice(0, 10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const nombreArchivo = 'pedidos-farmacia-nieto-' + new Date().toISOString().slice(0, 10);
+
+    // Si la librer\u00EDa de Excel no carg\u00F3 (sin internet), bajamos un CSV simple de respaldo.
+    if (!window.XLSX) {
+      const esc = (v) => { v = v == null ? '' : String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      const csv = '\uFEFF' + cols.map((c) => esc(c[0])).join(';') + '\n' +
+        pedidos.map((p) => cols.map((c) => esc(c[1](p))).join(';')).join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = nombreArchivo + '.csv';
+      a.click(); URL.revokeObjectURL(a.href);
+      return;
+    }
+
+    const XLSX = window.XLSX;
+    const aoa = [cols.map((c) => c[0])].concat(pedidos.map((p) => cols.map((c) => c[1](p))));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = cols.map((c) => ({ wch: c[2] }));
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: pedidos.length, c: cols.length - 1 } }) };
+    ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+
+    const estiloEncabezado = {
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      fill: { fgColor: { rgb: '1E4D2B' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    };
+    for (let c = 0; c < cols.length; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell) cell.s = estiloEncabezado;
+    }
+    // Formato de n\u00FAmero (moneda / %) en las columnas que lo tienen
+    for (let c = 0; c < cols.length; c++) {
+      const fmt = cols[c][3];
+      if (!fmt) continue;
+      for (let r = 1; r <= pedidos.length; r++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (cell && cell.t === 'n') cell.z = fmt;
+      }
+    }
+    ws['!rows'] = [{ hpt: 26 }]; // alto del encabezado
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+    XLSX.writeFile(wb, nombreArchivo + '.xlsx');
   };
   const cambiarEstado = async (id, estado) => {
     if (estado === 'en_preparacion') {
