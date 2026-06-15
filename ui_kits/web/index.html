@@ -677,6 +677,7 @@ const NAV = [
   { id: 'catalogo', label: 'Catálogo' },
   { id: 'nosotros', label: 'Nosotros' },
   { id: 'proceso', label: 'Cómo trabajamos' },
+  { id: 'estado', label: 'Seguí tu pedido' },
   { id: 'ubicacion', label: 'Ubicación' },
   { id: 'contacto', label: 'Contacto' },
 ];
@@ -1164,6 +1165,91 @@ function InstagramFeed() {
   );
 }
 
+/* ── Seguimiento de pedido ────────────────────────────────── */
+const PASOS_PEDIDO = [
+  ['nuevo', 'Recibido', 'Inbox'],
+  ['en_preparacion', 'En preparación', 'FlaskConical'],
+  ['listo', 'Listo para retirar', 'PackageCheck'],
+  ['entregado', 'Entregado', 'Check'],
+];
+function EstadoPedido() {
+  const [nro, setNro] = React.useState('');
+  const [res, setRes] = React.useState(null); // null | 'notfound' | fila
+  const [buscando, setBuscando] = React.useState(false);
+  const [err, setErr] = React.useState('');
+
+  const buscar = async (e) => {
+    e.preventDefault();
+    const n = nro.trim().replace(/\D/g, '');
+    if (!n) return;
+    setBuscando(true); setErr(''); setRes(null);
+    try {
+      let fila = null;
+      if (SUPA_ON) {
+        const { data, error } = await supaWeb.rpc('estado_pedido', { retiro: Number(n) });
+        if (error) throw error;
+        fila = data && data[0];
+      } else {
+        const arr = JSON.parse(localStorage.getItem('fn_pedidos') || '[]');
+        fila = arr.find((p) => String(p.nro_retiro) === n);
+      }
+      setRes(fila || 'notfound');
+    } catch (ex) {
+      setErr('No pudimos consultar el estado ahora. Probá de nuevo en un rato.');
+    }
+    setBuscando(false);
+  };
+
+  const idx = (res && res !== 'notfound') ? PASOS_PEDIDO.findIndex((p) => p[0] === res.estado) : -1;
+  const cancelado = res && res !== 'notfound' && res.estado === 'cancelado';
+
+  return (
+    <section id="estado" className="fn-section" style={{ background: 'var(--mint-50)' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <span className="nieto-eyebrow">Seguimiento</span>
+          <h2 className="fn-section-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--green-900)', margin: '12px 0 10px' }}>Seguí tu pedido</h2>
+          <p style={{ fontSize: 16, color: 'var(--ink-500)', margin: '0 auto', maxWidth: 520 }}>Ingresá tu número de retiro y mirá en qué etapa está tu fórmula.</p>
+        </div>
+        <form onSubmit={buscar} style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+          <input className="fn-input" type="number" inputMode="numeric" placeholder="N° de retiro" value={nro} onChange={(e) => setNro(e.target.value)} style={{ maxWidth: 220 }} />
+          <Button type="submit" size="lg" disabled={buscando} iconRight={<Icon name="Search" size={17} />}>{buscando ? 'Buscando…' : 'Ver estado'}</Button>
+        </form>
+        {err && <Alert variant="danger">{err}</Alert>}
+        {res === 'notfound' && <Alert variant="warning" title="No encontramos ese número">Revisá el número de retiro que te dimos. Si tenés dudas, escribinos por WhatsApp.</Alert>}
+        {cancelado && <Alert variant="danger" title="Pedido cancelado">Este pedido figura como cancelado. Si creés que es un error, contactanos.</Alert>}
+        {res && res !== 'notfound' && !cancelado && (
+          <Card padding="lg">
+            <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 18, color: 'var(--green-900)', marginBottom: 18 }}>Pedido N° {res.nro_retiro}</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {PASOS_PEDIDO.map(([key, label, icon], i) => {
+                const activo = i <= idx;
+                const done = i < idx;
+                const current = i === idx;
+                return (
+                  <div key={key} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none' }}>
+                      <span style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: activo ? 'var(--green-700)' : 'var(--green-50)', border: current ? '3px solid var(--gold-400)' : '1px solid var(--line-200)', boxSizing: 'border-box' }}>
+                        <Icon name={done ? 'Check' : icon} size={20} color={activo ? 'var(--cream-50)' : 'var(--ink-300)'} />
+                      </span>
+                      {i < PASOS_PEDIDO.length - 1 && <span style={{ width: 2, height: 34, background: i < idx ? 'var(--green-500)' : 'var(--line-200)' }} />}
+                    </div>
+                    <div style={{ paddingTop: 9 }}>
+                      <div style={{ fontWeight: 700, fontSize: 16, color: activo ? 'var(--green-900)' : 'var(--ink-400)' }}>{label}</div>
+                      {current && <div style={{ fontSize: 13, color: 'var(--green-600)', fontWeight: 600, marginTop: 2 }}>● Acá está tu pedido ahora</div>}
+                      {current && key === 'listo' && res.entrega && <div style={{ fontSize: 13, color: 'var(--ink-500)', marginTop: 2 }}>Pasá a retirarlo. Entrega estimada: {new Date(res.entrega + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}.</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Footer ───────────────────────────────────────────────── */
 function Footer() {
   return (
@@ -1280,6 +1366,7 @@ function NietoSite() {
         <Catalogo />
         <About />
         <Process />
+        <EstadoPedido />
         <InstagramFeed />
         <FAQ />
         <Contact formState={{ sent, setSent }} />
