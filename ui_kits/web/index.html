@@ -397,7 +397,7 @@ button { font-family: inherit; }
 @media (max-width: 960px) {
   .fn-spec-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 860px) {
+@media (max-width: 1180px) {
   .fn-nav { display: none; }
   .fn-header-cta { display: none; }
   .fn-hamb { display: inline-flex; margin-left: auto; }
@@ -686,7 +686,6 @@ const NAV = [
   { id: 'nosotros', label: 'Nosotros' },
   { id: 'proceso', label: 'Cómo trabajamos' },
   { id: 'estado', label: 'Seguí tu pedido' },
-  { id: 'ubicacion', label: 'Ubicación' },
   { id: 'contacto', label: 'Contacto' },
 ];
 
@@ -705,8 +704,8 @@ function Header({ active, onNav, onCta }) {
             <a key={n.id} href={`#${n.id}`}
               onClick={(e) => { e.preventDefault(); go(n.id); }}
               style={{
-                fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 14,
-                padding: '9px 14px', borderRadius: 'var(--radius-pill)', textDecoration: 'none',
+                fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap',
+                padding: '8px 11px', borderRadius: 'var(--radius-pill)', textDecoration: 'none',
                 color: active === n.id ? 'var(--green-900)' : 'var(--ink-500)',
                 background: active === n.id ? 'var(--green-100)' : 'transparent',
                 transition: 'all .2s'
