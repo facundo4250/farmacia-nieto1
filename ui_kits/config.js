@@ -20,11 +20,11 @@ window.FN_CONFIG = {
   // Pegá acá la "Site Key" (clave pública) que te da Cloudflare Turnstile.
   // Mientras esté vacío, la web sigue funcionando sin captcha (con el
   // límite de 1 consulta cada 24 h como protección). Ver CAPTCHA.md.
-  TURNSTILE_SITE_KEY: '',
+  TURNSTILE_SITE_KEY: '0x4AAAAAADlQItYaHy0OsAQ7',
 
   // URL de la función "crear-pedido" de Supabase (la que verifica el captcha
   // y guarda el pedido). Queda así:
   //   https://lajtqymtkerkfmwhiiju.supabase.co/functions/v1/crear-pedido
   // Dejala vacía hasta que hayas creado la función (ver CAPTCHA.md).
-  CREAR_PEDIDO_URL: '',
+  CREAR_PEDIDO_URL: 'https://lajtqymtkerkfmwhiiju.supabase.co/functions/v1/crear-pedido',
 };
