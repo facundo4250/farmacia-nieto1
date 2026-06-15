@@ -439,9 +439,9 @@ button { font-family: inherit; }
 .fn-pre-ring { position: relative; width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; animation: fnRise .7s var(--ease-out) both; }
 .fn-pre-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(184,136,31,.16); border-top-color: #d4a32c; border-right-color: #ddb438; animation: fnSpin 1.05s cubic-bezier(.6,.25,.4,.75) infinite; }
 .fn-pre-logo { width: 90px; height: 90px; object-fit: contain; animation: fnBreathe 2.4s ease-in-out infinite; filter: drop-shadow(0 4px 10px rgba(30,77,43,.12)); }
-.fn-pre-name { display: flex; flex-direction: column; align-items: center; line-height: .82; animation: fnRise .8s .15s var(--ease-out) both; }
+.fn-pre-name { display: flex; flex-direction: column; align-items: center; line-height: .95; animation: fnRise .8s .15s var(--ease-out) both; }
 .fn-pre-script { font-family: 'Sacramento', 'Segoe Script', cursive; font-size: 46px; color: #2f6b3c; }
-.fn-pre-serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 16px; letter-spacing: .28em; text-transform: uppercase; color: #8aa985; padding-left: 5px; }
+.fn-pre-serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 16px; letter-spacing: .28em; text-transform: uppercase; color: #8aa985; padding-left: 5px; margin-top: 4px; }
 .fn-pre-bar { width: 150px; height: 3px; border-radius: 3px; background: rgba(47,107,60,.12); overflow: hidden; }
 .fn-pre-bar span { display: block; width: 40%; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #6f8f6c, #d4a32c); animation: fnLoad 1.3s ease-in-out infinite; }
 @keyframes fnSpin { to { transform: rotate(360deg); } }
@@ -625,9 +625,9 @@ const IMG_PATRICIA = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAU
 
 function Wordmark({ light } = {}) {
   return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0.86 }}>
+    <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0.95 }}>
       <span style={{ fontFamily: 'var(--font-script)', fontSize: 30, color: light ? 'var(--cream-100)' : 'var(--green-700)' }}>farmacia</span>
-      <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 15, letterSpacing: '0.22em', textTransform: 'uppercase', color: light ? 'var(--green-300)' : 'var(--green-400)', paddingLeft: 3 }}>Nieto</span>
+      <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 15, letterSpacing: '0.22em', textTransform: 'uppercase', color: light ? 'var(--green-300)' : 'var(--green-400)', paddingLeft: 3, marginTop: 3 }}>Nieto</span>
     </span>
   );
 }
