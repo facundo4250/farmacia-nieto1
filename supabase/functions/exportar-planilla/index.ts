@@ -130,16 +130,17 @@ Deno.serve(async (req: Request) => {
             fields: "gridProperties.frozenRowCount",
           },
         },
-        // Datos: ajuste de texto (que el texto largo se acomode) y alineado arriba
+        // Datos: alineados arriba; por defecto SIN ajuste (una línea)
         {
           repeatCell: {
             range: { sheetId: gid, startRowIndex: 1, endRowIndex: numRows, startColumnIndex: 0, endColumnIndex: numCols },
-            cell: { userEnteredFormat: { wrapStrategy: "WRAP", verticalAlignment: "TOP" } },
+            cell: { userEnteredFormat: { wrapStrategy: "OVERFLOW_CELL", verticalAlignment: "TOP" } },
             fields: "userEnteredFormat(wrapStrategy,verticalAlignment)",
           },
         },
       ];
-      // Anchos de columna (los mismos que usa el Excel)
+      // Anchos de columna (los mismos que usa el Excel). En las columnas anchas
+      // (texto largo) activamos el ajuste de texto para que se acomode prolijo.
       for (let i = 0; i < numCols; i++) {
         const w = Number(widths[i]) || 14;
         requests.push({
@@ -149,6 +150,15 @@ Deno.serve(async (req: Request) => {
             fields: "pixelSize",
           },
         });
+        if (w >= 30) {
+          requests.push({
+            repeatCell: {
+              range: { sheetId: gid, startRowIndex: 1, endRowIndex: numRows, startColumnIndex: i, endColumnIndex: i + 1 },
+              cell: { userEnteredFormat: { wrapStrategy: "WRAP" } },
+              fields: "userEnteredFormat.wrapStrategy",
+            },
+          });
+        }
       }
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
         method: "POST", headers: { ...G, "Content-Type": "application/json" }, body: JSON.stringify({ requests }),
