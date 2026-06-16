@@ -1205,8 +1205,9 @@ function Panel({ session, onSalir }) {
     if (!SUPA_ON) { setSheetMsg('Esto funciona solo conectado a la nube.'); return; }
     setSheetBusy(true); setSheetMsg('');
     try {
-      const { aoa } = construirTabla();
-      const { data, error } = await supa.functions.invoke(CFG.EXPORTAR_PLANILLA_FN || 'exportar-planilla', { body: { sheetId, rows: aoa } });
+      const { cols, aoa } = construirTabla();
+      const widths = cols.map((c) => c[2]);
+      const { data, error } = await supa.functions.invoke(CFG.EXPORTAR_PLANILLA_FN || 'exportar-planilla', { body: { sheetId, rows: aoa, widths } });
       if (error) {
         let detalle = error.message || 'error';
         try { const ctx = error.context && await error.context.json(); if (ctx && ctx.error) detalle = ctx.error; } catch (e) {}
