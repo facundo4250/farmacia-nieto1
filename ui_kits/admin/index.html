@@ -284,6 +284,35 @@ function calcCobro(p) {
   return { precioN, senaN, desc, senaEf, restoEf, saldoBase, descSena, descResto, faltaCobrar, faltaPotencial, totalFinal, ahorro, pagoTodo };
 }
 
+/* ── WhatsApp al cliente ──────────────────────────────────────
+   Arma el número (Argentina: 54 9 + área + número) y un mensaje
+   listo según el estado del pedido. */
+function waNumero(tel) {
+  let d = (tel || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.startsWith('54')) { if (!d.startsWith('549')) d = '549' + d.slice(2); }
+  else d = '549' + d;
+  return d;
+}
+function waMensaje(p) {
+  const nombre = (p.nombre || '').trim().split(' ')[0] || '';
+  const hola = nombre ? `¡Hola ${nombre}! ` : '¡Hola! ';
+  const nro = p.nro_retiro != null ? ` (N° de retiro ${p.nro_retiro})` : '';
+  const cb = calcCobro(p);
+  const falta = (cb.faltaCobrar && cb.faltaCobrar > 0) ? ` Te queda un saldo de ${formatMonto(cb.faltaCobrar)} para abonar al retirar.` : '';
+  const notas = p.notas_prep ? ` ${p.notas_prep.trim()}` : '';
+  if (p.estado === 'listo') return `${hola}Te escribimos de Farmacia Nieto 🌿. Tu preparado${nro} ya está *listo para retirar*.${falta}${notas} ¡Te esperamos!`;
+  if (p.estado === 'en_preparacion') return `${hola}Te escribimos de Farmacia Nieto 🌿. Tu preparado${nro} está en preparación. Te avisamos apenas esté listo.`;
+  if (p.estado === 'entregado') return `${hola}Gracias por elegir Farmacia Nieto 🌿. Cualquier consulta, escribinos por acá.`;
+  return `${hola}Te escribimos de Farmacia Nieto 🌿 por tu pedido${nro}.`;
+}
+function waLinkCliente(p) {
+  const n = waNumero(p.telefono);
+  return n ? `https://wa.me/${n}?text=${encodeURIComponent(waMensaje(p))}` : '';
+}
+
 /* ── Fotos de recetas ───────────────────────────────────────────
    Achicamos la imagen para que pese poco. En modo de prueba se
    guarda como texto en esta PC; con Supabase se sube al bucket
@@ -738,6 +767,12 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
             <Badge variant={est.badge} dot>{est.label}</Badge>
           </div>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {p.telefono && (
+              <Button size="sm" variant="outline" iconLeft={<Icon name="MessageCircle" size={14} color="#25D366" />}
+                onClick={() => { const u = waLinkCliente(p); if (u) window.open(u, '_blank', 'noopener,noreferrer'); }}>
+                WhatsApp
+              </Button>
+            )}
             <Button size="sm" variant="ghost" iconLeft={<Icon name="Pencil" size={14} />} onClick={() => onEditar(p)}>Editar</Button>
             {acciones.map(([destino, label, icono]) => (
               <Button key={destino} size="sm"
