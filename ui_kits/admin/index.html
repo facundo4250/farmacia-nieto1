@@ -303,10 +303,10 @@ function waMensaje(p) {
   const cb = calcCobro(p);
   const falta = (cb.faltaCobrar && cb.faltaCobrar > 0) ? ` Te queda un saldo de ${formatMonto(cb.faltaCobrar)} para abonar al retirar.` : '';
   const notas = p.notas_prep ? ` ${p.notas_prep.trim()}` : '';
-  if (p.estado === 'listo') return `${hola}Te escribimos de Farmacia Nieto 🌿. Tu preparado${nro} ya está *listo para retirar*.${falta}${notas} ¡Te esperamos!`;
-  if (p.estado === 'en_preparacion') return `${hola}Te escribimos de Farmacia Nieto 🌿. Tu preparado${nro} está en preparación. Te avisamos apenas esté listo.`;
-  if (p.estado === 'entregado') return `${hola}Gracias por elegir Farmacia Nieto 🌿. Cualquier consulta, escribinos por acá.`;
-  return `${hola}Te escribimos de Farmacia Nieto 🌿 por tu pedido${nro}.`;
+  if (p.estado === 'en_preparacion') return `${hola}Te escribimos de Farmacia Nieto. Tu preparado${nro} ya entró en preparación. Te avisamos apenas esté listo para retirar. ¡Gracias!`;
+  if (p.estado === 'listo') return `${hola}Te escribimos de Farmacia Nieto. Tu preparado${nro} ya está listo para retirar.${falta}${notas} Te esperamos en el horario de atención. ¡Gracias!`;
+  if (p.estado === 'entregado') return `${hola}Gracias por elegir Farmacia Nieto. Tu preparado fue entregado. Cualquier consulta, escribinos por acá. ¡Que estés muy bien!`;
+  return `${hola}Te escribimos de Farmacia Nieto por tu pedido${nro}.`;
 }
 function waLinkCliente(p) {
   const n = waNumero(p.telefono);
@@ -1151,6 +1151,8 @@ function Panel({ session, onSalir }) {
 
   const [sheetBusy, setSheetBusy] = React.useState(false);
   const [sheetMsg, setSheetMsg] = React.useState('');
+  const [avisoWa, setAvisoWa] = React.useState(() => localStorage.getItem('fn_aviso_wa') !== '0');
+  const toggleAvisoWa = () => setAvisoWa((v) => { const nv = !v; localStorage.setItem('fn_aviso_wa', nv ? '1' : '0'); return nv; });
 
   // Arma la tabla (encabezados + filas) que usan tanto el Excel como Google Sheets.
   const construirTabla = () => {
@@ -1259,8 +1261,8 @@ function Panel({ session, onSalir }) {
     setSheetBusy(false);
   };
   const cambiarEstado = async (id, estado) => {
+    const p = pedidos.find((x) => x.id === id);
     if (estado === 'en_preparacion') {
-      const p = pedidos.find((x) => x.id === id);
       const tieneSena = p && Number(p.sena) > 0;
       const tieneNro = p && p.nro_retiro != null && p.nro_retiro !== '';
       if (!tieneSena || !tieneNro) {
@@ -1270,7 +1272,6 @@ function Panel({ session, onSalir }) {
       }
     }
     if (estado === 'entregado') {
-      const p = pedidos.find((x) => x.id === id);
       const cob = calcCobro(p || {});
       const haySaldo = cob.precioN != null && !cob.pagoTodo && cob.saldoBase > 0;
       if (haySaldo && !p.pago_resto_metodo) {
@@ -1280,7 +1281,13 @@ function Panel({ session, onSalir }) {
       }
     }
     setErrCarga('');
-    setPedidos((arr) => arr.map((p) => (p.id === id ? { ...p, estado } : p)));
+    // Aviso automático al cliente: abre WhatsApp con el mensaje de la nueva etapa.
+    // (Se abre acá, dentro del clic, para que el navegador no lo bloquee.)
+    if (avisoWa && p && p.telefono && (estado === 'en_preparacion' || estado === 'listo' || estado === 'entregado')) {
+      const u = waLinkCliente({ ...p, estado });
+      if (u) window.open(u, '_blank', 'noopener,noreferrer');
+    }
+    setPedidos((arr) => arr.map((x) => (x.id === id ? { ...x, estado } : x)));
     try { await api.actualizar(id, { estado }); } catch (e) { refrescar(); }
   };
 
@@ -1365,6 +1372,10 @@ function Panel({ session, onSalir }) {
             ))}
           </div>
           <div className="fp-toolbar-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <label title="Al cambiar de etapa, abre WhatsApp con el mensaje listo para el cliente" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: avisoWa ? 'var(--green-800)' : 'var(--ink-400)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input type="checkbox" checked={avisoWa} onChange={toggleAvisoWa} style={{ accentColor: 'var(--green-700)', width: 16, height: 16 }} />
+              <Icon name="MessageCircle" size={15} color={avisoWa ? '#25D366' : 'var(--ink-400)'} /> Aviso WhatsApp
+            </label>
             <div className="fp-search-wrap" style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
                 <Icon name="Search" size={16} color="var(--ink-300)" />
