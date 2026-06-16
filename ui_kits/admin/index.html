@@ -1205,7 +1205,7 @@ function Panel({ session, onSalir }) {
     setSheetBusy(true); setSheetMsg('');
     try {
       const { aoa } = construirTabla();
-      const { data, error } = await supa.functions.invoke('exportar-planilla', { body: { sheetId, rows: aoa } });
+      const { data, error } = await supa.functions.invoke(CFG.EXPORTAR_PLANILLA_FN || 'exportar-planilla', { body: { sheetId, rows: aoa } });
       if (error) {
         let detalle = error.message || 'error';
         try { const ctx = error.context && await error.context.json(); if (ctx && ctx.error) detalle = ctx.error; } catch (e) {}

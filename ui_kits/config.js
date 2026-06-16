@@ -31,4 +31,8 @@ window.FN_CONFIG = {
   // ID de la planilla de Google donde el panel vuelca los pedidos
   // (botón "Actualizar Google Sheets"). Es la parte del link entre /d/ y /edit.
   GOOGLE_SHEET_ID: '1QMwvA0_kKBMBCgFF9osShOspH3d6DW50635pge2o5YU',
+
+  // Nombre real (slug) de la función que escribe en la planilla.
+  // En Supabase quedó como "super-function" (el slug no se puede renombrar).
+  EXPORTAR_PLANILLA_FN: 'super-function',
 };
