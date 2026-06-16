@@ -766,7 +766,7 @@ const TABS = [
 /* ════════════════════════════════════════════════════════════
    Resumen por día — cantidad de pedidos y montos generados
    ════════════════════════════════════════════════════════════ */
-function ReporteDiario({ porDia, onExportar, onPlanilla, planillaBusy, planillaMsg }) {
+function ReporteDiario({ porDia, onExportar, onPlanilla, planillaBusy, planillaMsg, sheetUrl }) {
   const totalGeneral = porDia.reduce((s, d) => s + d.total, 0);
   const pedidosGeneral = porDia.reduce((s, d) => s + d.cantidad, 0);
   const th = { textAlign: 'left', fontSize: 11.5, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-400)', fontWeight: 700, padding: '0 14px 10px' };
@@ -778,6 +778,7 @@ function ReporteDiario({ porDia, onExportar, onPlanilla, planillaBusy, planillaM
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Button variant="outline" size="sm" onClick={onExportar} iconLeft={<Icon name="Download" size={15} />}>Exportar copia (Excel)</Button>
           {onPlanilla && <Button variant="outline" size="sm" disabled={planillaBusy} onClick={onPlanilla} iconLeft={<Icon name="Table" size={15} />}>{planillaBusy ? 'Actualizando…' : 'Actualizar Google Sheets'}</Button>}
+          {sheetUrl && <Button variant="ghost" size="sm" onClick={() => window.open(sheetUrl, '_blank', 'noopener,noreferrer')} iconLeft={<Icon name="ExternalLink" size={15} />}>Ver Google Sheets</Button>}
         </div>
       </div>
       {planillaMsg && <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: planillaMsg.startsWith('✓') ? 'var(--green-700)' : '#b3261e' }}>{planillaMsg}</p>}
@@ -1311,7 +1312,7 @@ function Panel({ session, onSalir }) {
         </div>
 
         {vista === 'resumen' ? (
-          <ReporteDiario porDia={porDia} onExportar={exportarCSV} onPlanilla={enviarAPlanilla} planillaBusy={sheetBusy} planillaMsg={sheetMsg} />
+          <ReporteDiario porDia={porDia} onExportar={exportarCSV} onPlanilla={enviarAPlanilla} planillaBusy={sheetBusy} planillaMsg={sheetMsg} sheetUrl={CFG.GOOGLE_SHEET_ID ? 'https://docs.google.com/spreadsheets/d/' + CFG.GOOGLE_SHEET_ID + '/edit' : ''} />
         ) : vista === 'clientes' ? (
           <ClientesView clientes={clientesLista} pedidos={pedidos} onVerReceta={abrirReceta} onDescargarReceta={descargarReceta} />
         ) : (<>
