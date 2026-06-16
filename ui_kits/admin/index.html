@@ -696,15 +696,15 @@ function PedidoRow({ p, onEstado, onEditar, onVerReceta, recurrencia = 1 }) {
             <Icon name="Phone" size={13} color="var(--ink-400)" /> {p.telefono}
           </div>
         </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
+        <div style={{ flex: 1, minWidth: 220, maxWidth: '100%' }}>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
             {recurrencia >= 2 && <Badge variant="solid"><Icon name="Repeat" size={11} color="var(--cream-50)" /> Cliente recurrente · {recurrencia}</Badge>}
             {p.especialidad && <Badge variant="neutral">{p.especialidad}</Badge>}
             <Badge variant={p.origen === 'web' ? 'info' : 'gold'}>{p.origen === 'web' ? 'Desde la web' : 'Carga manual'}</Badge>
           </div>
-          {p.detalle && <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.detalle}</div>}
+          {p.detalle && <div style={{ fontSize: 13.5, color: 'var(--ink-500)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.detalle}</div>}
           {p.notas_prep && (
-            <div style={{ marginTop: 8, fontSize: 13, color: p.estado === 'listo' ? 'var(--green-900)' : 'var(--ink-600)', background: p.estado === 'listo' ? 'var(--mint-100)' : 'var(--cream-200)', border: '1px solid ' + (p.estado === 'listo' ? 'var(--mint-200)' : 'var(--line-200)'), borderRadius: 'var(--radius-md)', padding: '8px 10px', lineHeight: 1.45 }}>
+            <div style={{ marginTop: 8, fontSize: 13, color: p.estado === 'listo' ? 'var(--green-900)' : 'var(--ink-600)', background: p.estado === 'listo' ? 'var(--mint-100)' : 'var(--cream-200)', border: '1px solid ' + (p.estado === 'listo' ? 'var(--mint-200)' : 'var(--line-200)'), borderRadius: 'var(--radius-md)', padding: '8px 10px', lineHeight: 1.45, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               <span style={{ fontWeight: 700 }}>📝 Para el cliente: </span>{p.notas_prep}
             </div>
           )}
@@ -921,8 +921,8 @@ function ClienteHistorial({ cliente, pedidos, onVolver, onVerReceta, onDescargar
               {cb.ahorro > 0 && <Badge variant="success">Total final {formatMonto(cb.totalFinal)} · ahorro {formatMonto(cb.ahorro)}</Badge>}
               {p.entrega && <Badge variant="info">Entrega ~ {formatEntrega(p.entrega)}</Badge>}
             </div>
-            {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5 }}>{p.detalle}</p>}
-            {p.notas_prep && <p style={{ fontSize: 13, color: 'var(--green-900)', background: 'var(--mint-100)', borderRadius: 'var(--radius-md)', padding: '8px 10px', margin: '8px 0 0', lineHeight: 1.45 }}><b>📝 Para el cliente: </b>{p.notas_prep}</p>}
+            {p.detalle && <p style={{ fontSize: 13.5, color: 'var(--ink-500)', margin: '8px 0 0', lineHeight: 1.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.detalle}</p>}
+            {p.notas_prep && <p style={{ fontSize: 13, color: 'var(--green-900)', background: 'var(--mint-100)', borderRadius: 'var(--radius-md)', padding: '8px 10px', margin: '8px 0 0', lineHeight: 1.45, overflowWrap: 'anywhere', wordBreak: 'break-word' }}><b>📝 Para el cliente: </b>{p.notas_prep}</p>}
             {p.receta_img && <div style={{ marginTop: 10 }}><RecetaThumb receta={p.receta_img} onVer={onVerReceta} onDescargar={onDescargarReceta} /></div>}
             {!p.receta_img && p.receta_drive_url && (
               <div style={{ marginTop: 10 }}>
