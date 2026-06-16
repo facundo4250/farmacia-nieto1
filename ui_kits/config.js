@@ -27,4 +27,8 @@ window.FN_CONFIG = {
   //   https://lajtqymtkerkfmwhiiju.supabase.co/functions/v1/crear-pedido
   // Dejala vacía hasta que hayas creado la función (ver CAPTCHA.md).
   CREAR_PEDIDO_URL: 'https://lajtqymtkerkfmwhiiju.supabase.co/functions/v1/crear-pedido',
+
+  // ID de la planilla de Google donde el panel vuelca los pedidos
+  // (botón "Actualizar Google Sheets"). Es la parte del link entre /d/ y /edit.
+  GOOGLE_SHEET_ID: '1QMwvA0_kKBMBCgFF9osShOspH3d6DW50635pge2o5YU',
 };
